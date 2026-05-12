@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
 import { RootStackParamList } from "../../../App";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
@@ -23,9 +24,23 @@ export default function CreateProfileScreen({ navigation }: Props) {
   const [gender, setGender] = useState<Gender>("Perempuan");
   const [name, setName] = useState("");
   const [age, setAge] = useState("18");
-  const [country] = useState("🇲🇾 Malaysia");
+  const [country, setCountry] = useState("🇲🇾 Malaysia");
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const genderOptions: Gender[] = ["Laki-laki", "Perempuan", "Tidak Diketahui"];
+  
+  const countryOptions = [
+    "🇮🇩 Indonesia",
+    "🇲🇾 Malaysia",
+    "🇸🇬 Singapore",
+    "🇧🇳 Brunei",
+    "🇹🇭 Thailand",
+    "🇵🇭 Philippines",
+    "🇻🇳 Vietnam",
+    "🇲🇲 Myanmar",
+    "🇰🇭 Cambodia",
+    "🇱🇦 Laos"
+  ];
 
   return (
     <View style={styles.container}>
@@ -109,7 +124,10 @@ export default function CreateProfileScreen({ navigation }: Props) {
         {/* Country */}
         <View style={styles.inputWrapper}>
           <Text style={styles.fieldLabel}>Asal Negara</Text>
-          <TouchableOpacity style={styles.countryField}>
+          <TouchableOpacity 
+            style={styles.countryField}
+            onPress={() => setShowCountryPicker(true)}
+          >
             <Text style={styles.countryText}>{country}</Text>
             <Text style={styles.dropdownIcon}>▼</Text>
           </TouchableOpacity>
@@ -131,6 +149,44 @@ export default function CreateProfileScreen({ navigation }: Props) {
           <Text style={styles.loginText}>Level0</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Country Picker Modal */}
+      <Modal
+        visible={showCountryPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCountryPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowCountryPicker(false)}
+        >
+          <TouchableOpacity style={styles.modalContent} activeOpacity={1}>
+            <Text style={styles.modalTitle}>Pilih Negara</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {countryOptions.map((item) => (
+                <TouchableOpacity
+                  key={item}
+                  style={[
+                    styles.countryOption,
+                    country === item && styles.countryOptionSelected
+                  ]}
+                  onPress={() => {
+                    setCountry(item);
+                    setShowCountryPicker(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.countryOptionText,
+                    country === item && styles.countryOptionTextSelected
+                  ]}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -298,5 +354,45 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 13,
     color: Colors.gray400,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    width: "100%",
+    maxHeight: "60%",
+    padding: Spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  countryOption: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray100,
+  },
+  countryOptionSelected: {
+    backgroundColor: Colors.primaryBg,
+    borderRadius: BorderRadius.md,
+    borderBottomWidth: 0,
+    paddingHorizontal: 12,
+  },
+  countryOptionText: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
+  countryOptionTextSelected: {
+    color: Colors.primary,
+    fontWeight: "600",
   },
 });
