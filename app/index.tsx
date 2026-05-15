@@ -4,7 +4,6 @@ import {
   Text,
   View,
   Image,
-  ScrollView,
   FlatList,
   TouchableOpacity,
   SafeAreaView,
@@ -12,101 +11,140 @@ import {
   StatusBar,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import {
   getRecommendations,
   checkServerHealth,
   MenuRecommendation,
-  NutritionTarget,
   DietProfile,
 } from '../src/services/api';
+import recipeDetailsData from '../src/data/cookpad_diet_results.json';
 
-const PRIMARY_COLOR = '#4CAF50';
-const BG_COLOR = '#F9F9F9';
+const { width } = Dimensions.get('window');
+const PRIMARY_COLOR = '#00C853';
+const BG_COLOR = '#FFFFFF';
+const mealCategories = ['Breakfast', 'Lunch', 'Dinner'];
 
-// Meal category tabs
-const mealCategories = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
-
-// ── Fallback data (dipakai kalau server belum aktif) ────────────────
+// ── Fallback data (tampil saat server AI tidak merespons) ─────────────────────
 const fallbackMeals: MenuRecommendation[] = [
   {
-    nama_menu: 'Avocado Toast',
-    url: '',
-    kalori: 250,
-    protein_g: 8,
-    karbohidrat_g: 28,
-    lemak_g: 14,
-    serat_g: 6,
-    bahan: 'Roti gandum|Alpukat|Telur|Garam|Lada',
-    skor_agen: 0,
-    dipilih_kali: 0,
+    nama_menu: 'Salmon Panggang & Brokoli',
+    url: 'https://cookpad.com/id/resep/24642279',
+    kalori: 230, protein_g: 28, karbohidrat_g: 12, lemak_g: 8,
+    serat_g: 3, bahan: 'Ikan salmon|Brokoli|Paprika|Nasi', skor_agen: 0.9, dipilih_kali: 5,
   },
   {
-    nama_menu: 'Chicken Salad',
-    url: '',
-    kalori: 350,
-    protein_g: 32,
-    karbohidrat_g: 12,
-    lemak_g: 18,
-    serat_g: 4,
-    bahan: 'Dada ayam|Selada|Tomat|Ketimun|Olive oil',
-    skor_agen: 0,
-    dipilih_kali: 0,
+    nama_menu: 'Wrap Telur & Sayuran',
+    url: 'https://cookpad.com/id/resep/23933390',
+    kalori: 310, protein_g: 22, karbohidrat_g: 28, lemak_g: 12,
+    serat_g: 4, bahan: 'Telur|Selada|Timun|Tomat|Kulit lumpia', skor_agen: 0.85, dipilih_kali: 4,
   },
   {
-    nama_menu: 'Berry Smoothie',
-    url: '',
-    kalori: 180,
-    protein_g: 6,
-    karbohidrat_g: 32,
-    lemak_g: 3,
-    serat_g: 5,
-    bahan: 'Blueberry|Strawberry|Yogurt|Madu',
-    skor_agen: 0,
-    dipilih_kali: 0,
+    nama_menu: 'Salad Ayam Jagung',
+    url: 'https://cookpad.com/id/resep/17132060',
+    kalori: 309, protein_g: 27, karbohidrat_g: 35, lemak_g: 7,
+    serat_g: 5, bahan: 'Ayam|Jagung manis|Tomat ceri|Lettuce|Timun', skor_agen: 0.8, dipilih_kali: 3,
+  },
+  {
+    nama_menu: 'Salmon Don & Tahu',
+    url: 'https://cookpad.com/id/resep/17039707',
+    kalori: 375, protein_g: 38, karbohidrat_g: 28, lemak_g: 12,
+    serat_g: 3, bahan: 'Salmon|Tahu|Nasi|Soy sauce|Wasabi', skor_agen: 0.75, dipilih_kali: 2,
   },
 ];
 
+// ── Emoji helper berdasarkan nama bahan ──────────────────────────────────────
+function getIngredientEmoji(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes('salmon') || n.includes('ikan')) return '🐟';
+  if (n.includes('ayam') || n.includes('chicken')) return '🍗';
+  if (n.includes('telur') || n.includes('egg')) return '🥚';
+  if (n.includes('tomat')) return '🍅';
+  if (n.includes('brokoli') || n.includes('broccoli')) return '🥦';
+  if (n.includes('wortel') || n.includes('carrot')) return '🥕';
+  if (n.includes('alpukat') || n.includes('avocado')) return '🥑';
+  if (n.includes('nasi') || n.includes('rice') || n.includes('jagung')) return '🌽';
+  if (n.includes('selada') || n.includes('lettuce') || n.includes('salad')) return '🥬';
+  if (n.includes('timun') || n.includes('cucumber')) return '🥒';
+  if (n.includes('tahu') || n.includes('tofu')) return '🧀';
+  if (n.includes('udang') || n.includes('shrimp')) return '🦐';
+  if (n.includes('gula') || n.includes('sugar')) return '🍬';
+  if (n.includes('minyak') || n.includes('oil')) return '🫙';
+  return '🥗';
+}
+
+// ── Circular progress untuk nutrisi ──────────────────────────────────────────
+function NutritionCircle({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const r = 32;
+  const circumference = 2 * Math.PI * r;
+  const progress = Math.min(value / max, 1);
+  const offset = circumference - progress * circumference;
+  const pct = Math.round(progress * 100);
+
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <Svg width={80} height={80} viewBox="0 0 80 80">
+        <Circle cx="40" cy="40" r={r} stroke="#EEEEEE" strokeWidth={6} fill="none" />
+        <Circle cx="40" cy="40" r={r} stroke={color} strokeWidth={6} fill="none"
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" transform="rotate(-90 40 40)" />
+      </Svg>
+      <View style={{ position: 'absolute', top: 0, left: 0, width: 80, height: 80, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#333' }}>{pct}%</Text>
+      </View>
+      <Text style={{ fontSize: 11, color: '#888', marginTop: 4 }}>{label}</Text>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
-  // ── User Profile (nanti bisa diambil dari CreateProfileScreen) ────
   const [profile] = useState<DietProfile>({
-    jk: 'l',
-    umur: 25,
-    tb: 175,
-    bb: 70,
-    tujuan: 'tetap_bugar',
+    jk: 'l', umur: 25, tb: 175, bb: 70, tujuan: 'tetap_bugar',
   });
 
-  // ── State ─────────────────────────────────────────────────────────
   const [recommendations, setRecommendations] = useState<MenuRecommendation[]>(fallbackMeals);
-  const [target, setTarget] = useState<NutritionTarget | null>(null);
-  const [caloriesEaten] = useState(800);
   const [activeCategory, setActiveCategory] = useState('Breakfast');
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── Fetch rekomendasi dari ML Server ──────────────────────────────
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MenuRecommendation | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<any>(null);
+
   const fetchRecommendations = useCallback(async () => {
     try {
-      // Cek server dulu
+      console.log('[AI] Memeriksa health server...');
       const health = await checkServerHealth();
+      console.log('[AI] Health:', JSON.stringify(health));
       setServerOnline(health.model_loaded);
 
       if (!health.model_loaded) {
-        console.log('[INFO] Model belum dimuat, pakai fallback data');
+        console.log('[AI] Model belum siap, gunakan fallback.');
         return;
       }
 
-      // Ambil rekomendasi dari AI
+      console.log('[AI] Meminta rekomendasi...');
       const result = await getRecommendations(profile);
-      setRecommendations(result.recommendations);
-      setTarget(result.target);
-      console.log(`[AI] ${result.recommendations.length} rekomendasi diterima`);
-    } catch (error) {
-      console.log('[INFO] Server offline, pakai fallback data');
+      console.log('[AI] Recs diterima:', result.recommendations.length);
+
+      if (result.recommendations && result.recommendations.length > 0) {
+        // Filter out menu dengan nama kosong
+        const validRecs = result.recommendations.filter(r => r.nama_menu && r.nama_menu.trim() !== '');
+        if (validRecs.length > 0) {
+          setRecommendations(validRecs);
+        } else {
+          console.log('[AI] Nama menu kosong dari server, gunakan fallback');
+        }
+      }
+    } catch (error: any) {
+      console.log('[AI] Error:', error.message);
       setServerOnline(false);
     } finally {
       setLoading(false);
@@ -114,514 +152,423 @@ export default function HomeScreen() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, [fetchRecommendations]);
+  useEffect(() => { fetchRecommendations(); }, [fetchRecommendations]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchRecommendations();
   }, [fetchRecommendations]);
 
-  // ── Fallback target kalau server offline ──────────────────────────
-  const displayTarget: NutritionTarget = target || {
-    kalori: 2400,
-    protein_g: 98,
-    karbohidrat_g: 300,
-    lemak_g: 67,
-  };
-
-  // ── Derived values ────────────────────────────────────────────────
-  const caloriesRemaining = Math.max(0, Math.round(displayTarget.kalori) - caloriesEaten);
-  const tdee = Math.round(displayTarget.kalori);
-
-  // Circular Progress
-  const radius = 60;
-  const strokeWidth = 12;
-  const circumference = 2 * Math.PI * radius;
-  const progress = Math.min((caloriesEaten / tdee) * 100, 100);
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-  // ── Date ──────────────────────────────────────────────────────────
   const getTodayDate = () => {
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'short', day: 'numeric' };
-    return new Date().toLocaleDateString('en-US', options);
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+    return `Today, ${new Date().toLocaleDateString('en-GB', options)}`;
   };
 
-  // ── Format bahan menjadi list pendek ──────────────────────────────
-  const formatBahan = (bahan: string) => {
-    if (!bahan) return [];
-    return bahan.split('|').filter(b => b.trim()).slice(0, 3);
+  const getRecipeDetail = (url: string) =>
+    (recipeDetailsData as any[]).find((r) => r.url === url) || null;
+
+  const openDetail = (item: MenuRecommendation) => {
+    setSelectedItem(item);
+    setSelectedDetail(getRecipeDetail(item.url));
+    setModalVisible(true);
   };
 
-  // ── Render meal card (sekarang dari AI) ───────────────────────────
-  const renderMealItem = ({ item }: { item: MenuRecommendation }) => (
-    <View style={styles.cardContainer}>
-      {/* Placeholder image with icon */}
-      <View style={styles.cardImagePlaceholder}>
-        <Ionicons name="restaurant-outline" size={32} color={PRIMARY_COLOR} />
-      </View>
-      <View style={styles.cardContent}>
+  // ── Render card ─────────────────────────────────────────────────────────────
+  const renderCard = ({ item }: { item: MenuRecommendation }) => {
+    const detail = getRecipeDetail(item.url);
+    const img = detail?.image_url
+      || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=300&q=80';
+
+    return (
+      <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => openDetail(item)}>
+        <TouchableOpacity style={styles.heartBtn}>
+          <Feather name="heart" size={16} color="#FF5252" />
+        </TouchableOpacity>
+        <Image source={{ uri: img }} style={styles.cardImg} />
         <Text style={styles.cardTitle} numberOfLines={2}>{item.nama_menu}</Text>
-        <View style={styles.chipContainer}>
-          <View style={styles.chip}>
-            <Ionicons name="flame-outline" size={14} color={PRIMARY_COLOR} />
-            <Text style={styles.chipText}>{item.kalori} kcal</Text>
+        <View style={styles.cardFooter}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Feather name="clock" size={10} color="#999" />
+            <Text style={styles.cardMeta}> 25 min</Text>
           </View>
-          <View style={styles.chip}>
-            <Ionicons name="barbell-outline" size={14} color="#F44336" />
-            <Text style={styles.chipText}>{item.protein_g}g prot</Text>
-          </View>
+          <Text style={styles.cardKcal}>{Math.round(item.kalori)} Kcal</Text>
         </View>
-        {/* Bahan preview */}
-        {item.bahan ? (
-          <Text style={styles.bahanPreview} numberOfLines={1}>
-            {formatBahan(item.bahan).join(', ')}
-          </Text>
-        ) : null}
-        {/* AI Score badge */}
         {item.skor_agen > 0 && (
           <View style={styles.aiBadge}>
-            <Ionicons name="sparkles" size={10} color="#fff" />
-            <Text style={styles.aiBadgeText}>AI Pick</Text>
+            <Text style={styles.aiBadgeText}>AI</Text>
           </View>
         )}
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
 
-  // ── Loading state ─────────────────────────────────────────────────
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 }}>
           <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-          <Text style={styles.loadingText}>Memuat rekomendasi AI...</Text>
+          <Text style={{ color: '#888' }}>Memuat rekomendasi AI...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // ── MAIN RENDER ─────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[PRIMARY_COLOR]}
-            tintColor={PRIMARY_COLOR}
-          />
-        }
-      >
+      <View style={styles.container}>
+
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hi, John Doe</Text>
-            <Text style={styles.dateText}>{getTodayDate()}</Text>
-          </View>
-          <View style={styles.headerRight}>
-            {/* Server status indicator */}
-            <View style={[styles.statusDot, { backgroundColor: serverOnline ? PRIMARY_COLOR : '#FF9800' }]} />
-            <TouchableOpacity style={styles.notificationBtn}>
-              <Ionicons name="notifications-outline" size={24} color="#333" />
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' }}
-              style={styles.profilePic}
+              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80' }}
+              style={styles.avatar}
             />
+            <View>
+              <Text style={styles.subGreeting}>Your Breakfast</Text>
+              <Text style={styles.dateText}>{getTodayDate()}</Text>
+            </View>
           </View>
+          <TouchableOpacity>
+            <Feather name="calendar" size={22} color="#333" />
+          </TouchableOpacity>
         </View>
 
-        {/* Server Status Banner */}
+        {/* Server Status */}
         {!serverOnline && (
           <TouchableOpacity style={styles.offlineBanner} onPress={onRefresh}>
-            <Ionicons name="cloud-offline-outline" size={16} color="#FF9800" />
-            <Text style={styles.offlineBannerText}>
-              Server AI offline — menampilkan data fallback. Tap untuk retry.
-            </Text>
+            <Feather name="cloud-off" size={13} color="#E65100" />
+            <Text style={styles.offlineText}>AI offline — menampilkan data contoh. Tap untuk retry.</Text>
           </TouchableOpacity>
         )}
 
-        {/* Nutrition Overview */}
-        <View style={styles.summaryContainer}>
-          {/* Circular Progress */}
-          <View style={styles.progressContainer}>
-            <Svg width="160" height="160" viewBox="0 0 160 160">
-              <Circle
-                cx="80"
-                cy="80"
-                r={radius}
-                stroke="#E0E0E0"
-                strokeWidth={strokeWidth}
-                fill="none"
-              />
-              <Circle
-                cx="80"
-                cy="80"
-                r={radius}
-                stroke={PRIMARY_COLOR}
-                strokeWidth={strokeWidth}
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                transform="rotate(-90 80 80)"
-              />
-            </Svg>
-            <View style={styles.progressTextContainer}>
-              <Text style={styles.remainingValue}>{caloriesRemaining}</Text>
-              <Text style={styles.remainingLabel}>Kcal Left</Text>
-            </View>
+        {/* Title row */}
+        <View style={styles.titleRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.titleText}>Recipes</Text>
+            <TouchableOpacity onPress={onRefresh} style={{ marginLeft: 8 }}>
+              <Feather name="refresh-cw" size={16} color={serverOnline ? PRIMARY_COLOR : '#999'} />
+            </TouchableOpacity>
           </View>
-
-          {/* Macros — now from AI target */}
-          <View style={styles.macrosContainer}>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroLabel}>Carbs</Text>
-              <Text style={styles.macroValue}>{Math.round(displayTarget.karbohidrat_g)}g</Text>
-              <View style={[styles.macroBar, { backgroundColor: '#FF9800' }]} />
-            </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroLabel}>Protein</Text>
-              <Text style={styles.macroValue}>{Math.round(displayTarget.protein_g)}g</Text>
-              <View style={[styles.macroBar, { backgroundColor: '#F44336' }]} />
-            </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroLabel}>Fats</Text>
-              <Text style={styles.macroValue}>{Math.round(displayTarget.lemak_g)}g</Text>
-              <View style={[styles.macroBar, { backgroundColor: '#2196F3' }]} />
-            </View>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <Feather name="search" size={20} color="#333" />
+            <Feather name="sliders" size={20} color="#333" />
           </View>
         </View>
 
-        {/* Goal info */}
-        <View style={styles.goalContainer}>
-          <Ionicons name="flag-outline" size={16} color={PRIMARY_COLOR} />
-          <Text style={styles.goalText}>
-            Tujuan: {profile.tujuan.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())}
-          </Text>
-          <Text style={styles.goalTarget}>Target: {tdee} kcal/hari</Text>
+        {/* Category tabs */}
+        <View style={styles.tabs}>
+          {mealCategories.map(cat => (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.tab, activeCategory === cat && styles.tabActive]}
+              onPress={() => setActiveCategory(cat)}
+            >
+              <Text style={[styles.tabTxt, activeCategory === cat && styles.tabTxtActive]}>{cat}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {/* Meal Categories */}
-        <View style={styles.tabsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
-            {mealCategories.map((category) => (
-              <TouchableOpacity
-                key={category}
-                style={[styles.tabItem, activeCategory === category && styles.activeTabItem]}
-                onPress={() => setActiveCategory(category)}
-              >
-                <Text style={[styles.tabText, activeCategory === category && styles.activeTabText]}>
-                  {category}
+        {/* Grid */}
+        <FlatList
+          data={recommendations}
+          renderItem={renderCard}
+          keyExtractor={(item, i) => `${item.url}-${i}`}
+          numColumns={2}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PRIMARY_COLOR]} />
+          }
+        />
+
+        {/* FAB */}
+        <View style={styles.fab}>
+          <TouchableOpacity onPress={onRefresh}>
+            <Feather name="refresh-cw" size={18} color="#333" />
+          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 3, marginTop: 8 }}>
+            <View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} />
+          </View>
+        </View>
+
+      </View>
+
+      {/* ── DETAIL MODAL ───────────────────────────────────────────────────── */}
+      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalVisible(false)}>
+        {selectedItem && (
+          <View style={{ flex: 1, backgroundColor: '#fff' }}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+
+              {/* Green header with circular image */}
+              <View style={styles.modalHeader}>
+                <Image
+                  source={{
+                    uri: selectedDetail?.image_url
+                      || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=500&q=80'
+                  }}
+                  style={styles.modalCircleImg}
+                />
+                <TouchableOpacity style={styles.modalRefreshBtn} onPress={onRefresh}>
+                  <Feather name="refresh-cw" size={16} color="#333" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalMoreBtn}>
+                  <Feather name="more-horizontal" size={16} color="#333" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Close / Back */}
+              <TouchableOpacity style={styles.modalBackBtn} onPress={() => setModalVisible(false)}>
+                <Feather name="chevron-left" size={24} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalFavBtn}>
+                <Feather name="heart" size={20} color="#fff" />
+              </TouchableOpacity>
+
+              <View style={styles.modalBody}>
+                {/* Title */}
+                <Text style={styles.modalTitle}>{selectedItem.nama_menu}</Text>
+
+                {/* Stat row */}
+                <View style={styles.statRow}>
+                  <View style={styles.statItem}>
+                    <Feather name="clock" size={14} color="#999" />
+                    <Text style={styles.statTxt}> 20</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text>🔥</Text>
+                    <Text style={styles.statTxt}> {Math.round(selectedItem.kalori)}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Ionicons name="bar-chart-outline" size={14} color="#999" />
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text>⭐</Text>
+                  </View>
+                </View>
+
+                {/* Description */}
+                <Text style={styles.sectionHeading}>Description</Text>
+                <Text style={styles.descText}>
+                  {selectedDetail?.steps?.[0]
+                    ? selectedDetail.steps[0].substring(0, 120) + '...'
+                    : 'Resep sehat yang kaya nutrisi dan mudah dibuat di rumah.'}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
 
-        {/* Meal List — from AI recommendations */}
-        <View style={styles.listContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {serverOnline ? '🤖 AI Recommendations' : `Recommended ${activeCategory}`}
-            </Text>
-            {serverOnline && (
-              <TouchableOpacity onPress={onRefresh}>
-                <Ionicons name="refresh-outline" size={20} color={PRIMARY_COLOR} />
+                {/* Ingredients */}
+                <Text style={styles.sectionHeading}>Ingredients</Text>
+                {selectedDetail?.ingredients ? (
+                  selectedDetail.ingredients.map((ing: string, idx: number) => (
+                    <View key={idx} style={styles.ingRow}>
+                      <View style={styles.ingLeft}>
+                        <Text style={styles.ingEmoji}>{getIngredientEmoji(ing)}</Text>
+                        <Text style={styles.ingName}>{ing.split(/\d/)[0].trim()}</Text>
+                      </View>
+                      <Text style={styles.ingGram}>
+                        {ing.match(/\d+/)?.[0] ? `${ing.match(/\d+/)?.[0]} gr` : 'secukupnya'}
+                      </Text>
+                    </View>
+                  ))
+                ) : (
+                  selectedItem.bahan?.split('|').map((b, idx) => (
+                    <View key={idx} style={styles.ingRow}>
+                      <View style={styles.ingLeft}>
+                        <Text style={styles.ingEmoji}>{getIngredientEmoji(b)}</Text>
+                        <Text style={styles.ingName}>{b.trim()}</Text>
+                      </View>
+                      <Text style={styles.ingGram}>secukupnya</Text>
+                    </View>
+                  ))
+                )}
+
+                {/* Nutrition Circles */}
+                <View style={styles.nutritionCard}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <Text style={styles.sectionHeading}>Salad Mix</Text>
+                    <TouchableOpacity>
+                      <Text style={{ color: PRIMARY_COLOR, fontWeight: '600', fontSize: 13 }}>See Details</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={{ color: '#999', fontSize: 12, marginBottom: 16 }}>
+                    1 Bowl ({Math.round(selectedItem.karbohidrat_g + selectedItem.protein_g + selectedItem.lemak_g)} gr)
+                  </Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+                    <NutritionCircle label="Carbohydrate" value={selectedItem.karbohidrat_g} max={selectedItem.kalori / 4} color="#9C27B0" />
+                    <NutritionCircle label="Protein" value={selectedItem.protein_g} max={selectedItem.kalori / 4} color={PRIMARY_COLOR} />
+                    <NutritionCircle label="Fat" value={selectedItem.lemak_g} max={selectedItem.kalori / 9} color="#FFC107" />
+                  </View>
+                </View>
+
+                {/* How to make */}
+                <Text style={[styles.sectionHeading, { marginTop: 24 }]}>How to make it</Text>
+                {selectedDetail?.steps ? (
+                  selectedDetail.steps.map((step: string, idx: number) => (
+                    <View key={idx} style={styles.stepRow}>
+                      <View style={styles.stepNum}>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>{idx + 1}</Text>
+                      </View>
+                      <Text style={styles.stepTxt}>{step}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={{ color: '#888', fontStyle: 'italic' }}>Cara pembuatan tidak tersedia.</Text>
+                )}
+
+                <View style={{ height: 30 }} />
+              </View>
+            </ScrollView>
+
+            {/* CTA Button */}
+            <View style={styles.ctaContainer}>
+              <TouchableOpacity style={styles.ctaBtn} onPress={() => setModalVisible(false)}>
+                <Text style={styles.ctaTxt}>Add to diet plan</Text>
               </TouchableOpacity>
-            )}
+            </View>
           </View>
-          <FlatList
-            data={recommendations}
-            renderItem={renderMealItem}
-            keyExtractor={(item, index) => `${item.nama_menu}-${index}`}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
-      </ScrollView>
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: BG_COLOR,
+    flex: 1, backgroundColor: BG_COLOR,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#888',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  dateText: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 4,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  notificationBtn: {
-    padding: 8,
-    marginRight: 12,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  profilePic: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
+  container: { flex: 1, paddingHorizontal: 20 },
+
+  // Header
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16 },
+  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
+  subGreeting: { fontSize: 12, color: '#888' },
+  dateText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+
+  // Offline banner
   offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    marginHorizontal: 20,
-    marginTop: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF3E0', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
   },
-  offlineBannerText: {
-    fontSize: 12,
-    color: '#E65100',
-    flex: 1,
+  offlineText: { fontSize: 11, color: '#E65100', flex: 1 },
+
+  // Title
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 12 },
+  titleText: { fontSize: 24, fontWeight: 'bold', color: '#111' },
+
+  // Tabs
+  tabs: { flexDirection: 'row', marginBottom: 20 },
+  tab: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, marginRight: 10 },
+  tabActive: { backgroundColor: PRIMARY_COLOR },
+  tabTxt: { fontSize: 14, fontWeight: '600', color: '#888' },
+  tabTxtActive: { color: '#fff' },
+
+  // Cards
+  card: {
+    width: (width - 52) / 2, backgroundColor: '#fff',
+    borderRadius: 16, padding: 12, alignItems: 'center',
+    borderWidth: 1, borderColor: '#F0F0F0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
   },
-  summaryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginTop: 20,
-    padding: 20,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  progressContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressTextContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  remainingValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  remainingLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  macrosContainer: {
-    justifyContent: 'center',
-    marginLeft: 20,
-    flex: 1,
-  },
-  macroItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  macroLabel: {
-    fontSize: 14,
-    color: '#888',
-    width: 60,
-  },
-  macroValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    width: 40,
-    textAlign: 'right',
-  },
-  macroBar: {
-    height: 6,
-    borderRadius: 3,
-    flex: 1,
-    marginLeft: 10,
-  },
-  goalContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 12,
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 8,
-  },
-  goalText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2E7D32',
-    flex: 1,
-  },
-  goalTarget: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '500',
-  },
-  tabsContainer: {
-    marginTop: 24,
-  },
-  tabsScroll: {
-    paddingHorizontal: 20,
-  },
-  tabItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginRight: 12,
-    borderRadius: 20,
-    backgroundColor: '#EAEAEA',
-  },
-  activeTabItem: {
-    backgroundColor: PRIMARY_COLOR,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#fff',
-  },
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 40,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  cardContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  cardImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardContent: {
-    flex: 1,
-    marginLeft: 16,
-    justifyContent: 'center',
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 10,
-  },
-  chipText: {
-    fontSize: 12,
-    color: '#555',
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  bahanPreview: {
-    fontSize: 11,
-    color: '#999',
-    marginTop: 6,
-  },
+  heartBtn: { position: 'absolute', top: 10, right: 10, zIndex: 1 },
+  cardImg: { width: 80, height: 80, borderRadius: 40, marginBottom: 10 },
+  cardTitle: { fontSize: 13, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 8 },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+  cardMeta: { fontSize: 10, color: '#999' },
+  cardKcal: { fontSize: 10, color: '#333', fontWeight: '600' },
   aiBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: 'absolute', top: 10, left: 10,
+    backgroundColor: PRIMARY_COLOR, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6,
+  },
+  aiBadgeText: { fontSize: 8, color: '#fff', fontWeight: 'bold' },
+
+  // FAB
+  fab: {
+    position: 'absolute', bottom: 30, right: 20,
+    width: 50, height: 70, backgroundColor: '#fff',
+    borderRadius: 25, alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 5,
+    paddingVertical: 12,
+  },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#555' },
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  modalHeader: {
+    backgroundColor: PRIMARY_COLOR, height: 220,
+    alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 10,
+  },
+  modalCircleImg: {
+    width: 160, height: 160, borderRadius: 80,
+    borderWidth: 4, borderColor: '#fff',
+    position: 'absolute', bottom: -50,
+  },
+  modalRefreshBtn: {
+    position: 'absolute', top: 20, right: 50,
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+  },
+  modalMoreBtn: {
+    position: 'absolute', top: 20, right: 10,
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+  },
+  modalBackBtn: {
+    position: 'absolute', top: Platform.OS === 'ios' ? 54 : 20, left: 14,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  modalFavBtn: {
+    position: 'absolute', top: Platform.OS === 'ios' ? 54 : 20, right: 100,
+    padding: 8,
+  },
+  modalBody: { paddingHorizontal: 24, paddingTop: 70, paddingBottom: 100 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#111', textAlign: 'center', marginBottom: 14 },
+
+  statRow: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20 },
+  statItem: { flexDirection: 'row', alignItems: 'center' },
+  statTxt: { fontSize: 13, color: '#555' },
+
+  sectionHeading: { fontSize: 17, fontWeight: 'bold', color: '#222', marginBottom: 12 },
+  descText: { fontSize: 14, color: '#666', lineHeight: 22, marginBottom: 20 },
+
+  ingRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: '#F5F5F5',
+  },
+  ingLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  ingEmoji: { fontSize: 22, marginRight: 12, width: 36, textAlign: 'center' },
+  ingName: { fontSize: 14, color: '#333', flex: 1 },
+  ingGram: { fontSize: 13, color: '#888' },
+
+  nutritionCard: {
+    marginTop: 24, backgroundColor: '#FAFAFA',
+    borderRadius: 16, padding: 20,
+  },
+
+  stepRow: { flexDirection: 'row', marginBottom: 16 },
+  stepNum: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: PRIMARY_COLOR, alignItems: 'center', justifyContent: 'center', marginRight: 12, marginTop: 2,
+  },
+  stepTxt: { fontSize: 14, color: '#444', flex: 1, lineHeight: 22 },
+
+  // CTA
+  ctaContainer: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: '#fff', paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
+    paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: '#F0F0F0',
+  },
+  ctaBtn: {
     backgroundColor: PRIMARY_COLOR,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    gap: 3,
+    paddingVertical: 16, borderRadius: 16, alignItems: 'center',
   },
-  aiBadgeText: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '700',
-  },
+  ctaTxt: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

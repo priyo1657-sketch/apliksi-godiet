@@ -8,16 +8,17 @@
 
 import { Platform } from 'react-native';
 
-// Android emulator menggunakan 10.0.2.2 untuk akses localhost host machine
-// iOS simulator dan web bisa langsung pakai localhost
-const getBaseUrl = () => {
+// Base URL untuk XAMPP lokal (jika ada API login)
+const getLocalUrl = () => {
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:8000';
   }
   return 'http://localhost:8000';
 };
 
-const BASE_URL = getBaseUrl();
+// URL API Machine Learning (Hugging Face)
+const ML_BASE_URL = 'https://kirisakiakane-go-diet-ml.hf.space';
+const BASE_URL = ML_BASE_URL; // Gunakan ML_BASE_URL untuk semua endpoint ML
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -120,6 +121,40 @@ export async function getRecommendations(profile: DietProfile): Promise<Recommen
     throw new Error(
       errorData?.detail || `Server error: ${response.status}`
     );
+  }
+
+  return response.json();
+}
+
+/**
+ * Scan makanan dari gambar menggunakan model YOLO di server.
+ */
+export async function scanFood(imageUri: string): Promise<any> {
+  const formData = new FormData();
+  
+  // Ambil nama file dan tipe dari URI
+  const filename = imageUri.split('/').pop() || 'photo.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+  formData.append('file', {
+    uri: Platform.OS === 'ios' ? imageUri.replace('file://', '') : imageUri,
+    name: filename,
+    type,
+  } as any);
+
+  const response = await fetch(`${BASE_URL}/api/scan`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Accept': 'application/json',
+      // Jangan set Content-Type secara manual saat menggunakan FormData di React Native
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail || `Gagal memproses gambar: ${response.status}`);
   }
 
   return response.json();

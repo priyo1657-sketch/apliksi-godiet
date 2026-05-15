@@ -145,8 +145,8 @@ export default function CreateProfileScreen({ navigation }: Props) {
         >
           <Text style={styles.nextButtonText}>Selanjutnya</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-          <Text style={styles.loginText}>Level0</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Text style={styles.loginText}>Lewati</Text>
         </TouchableOpacity>
       </View>
 

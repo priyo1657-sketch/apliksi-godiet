@@ -123,7 +123,9 @@ export default function GoalSelectionScreen({ navigation }: Props) {
         >
           <Text style={styles.nextButtonText}>Selanjutnya</Text>
         </TouchableOpacity>
-        <Text style={styles.levelText}>Level0</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Text style={styles.levelText}>Lewati</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

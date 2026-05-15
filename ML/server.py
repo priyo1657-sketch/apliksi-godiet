@@ -21,12 +21,22 @@ import os
 from pathlib import Path
 from contextlib import asynccontextmanager
 
+import io
+from io import BytesIO
+from PIL import Image
+
 import numpy as np
 import pandas as pd
 import torch
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+try:
+    from ultralytics import YOLO
+    HAS_ULTRALYTICS = True
+except ImportError:
+    HAS_ULTRALYTICS = False
 
 # ── Import dari modul DRL yang sudah ada ────────────────────────────────────
 from drl_food_agent import (
@@ -44,11 +54,13 @@ from drl_food_agent import (
 BASE_DIR   = Path(__file__).parent
 MODEL_PATH = BASE_DIR / "ppo_food_agent.pt"
 JSON_PATH  = BASE_DIR / "nutrition_results.json"
+YOLO_MODEL_PATH = BASE_DIR / "best.pt"
 
 # ── Global State ─────────────────────────────────────────────────────────────
 model_state = {
     "model": None,
     "db": None,
+    "yolo_model": None,
     "ready": False,
 }
 
@@ -86,6 +98,17 @@ async def lifespan(app: FastAPI):
     model_state["ready"] = True
     print(f"[✓] Model PPO dimuat dari {MODEL_PATH}")
     print(f"[✓] Device: {DEVICE}")
+
+    # Load YOLO Model (Optional)
+    if HAS_ULTRALYTICS and YOLO_MODEL_PATH.exists():
+        try:
+            model_state["yolo_model"] = YOLO(str(YOLO_MODEL_PATH))
+            print(f"[✓] Model YOLO dimuat dari {YOLO_MODEL_PATH}")
+        except Exception as e:
+            print(f"[!] Gagal load YOLO model: {e}")
+    else:
+        print("[!] Model YOLO (best.pt) belum tersedia atau ultralytics belum diinstall.")
+
     print("=" * 60)
     print("  Server siap menerima request!")
     print("  Docs: http://localhost:8000/docs")
@@ -96,6 +119,7 @@ async def lifespan(app: FastAPI):
     # Cleanup
     model_state["model"] = None
     model_state["db"] = None
+    model_state["yolo_model"] = None
     model_state["ready"] = False
     print("[INFO] Server shutdown.")
 
@@ -222,6 +246,7 @@ async def health_check():
     return {
         "status": "ok" if model_state["ready"] else "loading",
         "model_loaded": model_state["ready"],
+        "yolo_loaded": model_state["yolo_model"] is not None,
         "menu_count": len(model_state["db"]) if model_state["db"] is not None else 0,
         "device": str(DEVICE),
     }
@@ -293,3 +318,47 @@ async def recommend_menu(profile: UserProfile):
         recommendations=[MenuRecommendation(**r) for r in recs],
         total_3_meals=total_3,
     )
+
+@app.post("/api/scan")
+async def scan_food(file: UploadFile = File(...)):
+    """
+    Endpoint untuk mendeteksi makanan dari gambar menggunakan YOLOv8.
+    """
+    if model_state["yolo_model"] is None:
+        raise HTTPException(status_code=503, detail="YOLO model (best.pt) belum diload.")
+    
+    try:
+        contents = await file.read()
+        image = Image.open(BytesIO(contents)).convert("RGB")
+        
+        # Prediksi menggunakan YOLO
+        results = model_state["yolo_model"].predict(image, conf=0.25)
+        
+        detections = []
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                cls_id = int(box.cls[0])
+                conf = float(box.conf[0])
+                label = result.names[cls_id]
+                
+                # Koordinat bounding box (opsional jika dibutuhkan di UI)
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                
+                detections.append({
+                    "label": label,
+                    "confidence": round(conf, 2),
+                    "box": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}
+                })
+        
+        # Sort by confidence
+        detections = sorted(detections, key=lambda x: x["confidence"], reverse=True)
+        
+        return {
+            "success": True,
+            "detected_objects": detections,
+            "message": "Deteksi berhasil" if detections else "Tidak ada objek yang terdeteksi"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saat scan: {str(e)}")

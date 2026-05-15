@@ -129,7 +129,9 @@ export default function TrainingPlanScreen({ navigation }: Props) {
         >
           <Text style={styles.startButtonText}>Mulai</Text>
         </TouchableOpacity>
-        <Text style={styles.levelText}>Level0</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Text style={styles.levelText}>Lewati</Text>
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
