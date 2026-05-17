@@ -3,7 +3,9 @@ import { AntDesign, Feather, FontAwesome } from "@expo/vector-icons";
 import Zocial from "@expo/vector-icons/Zocial";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
+import { Alert } from "react-native";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -20,11 +22,48 @@ type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "Login">;
 };
 
+// URL API backend Railway (sudah live di cloud)
+const API_URL = 'https://web-production-78ab8.up.railway.app';
+
 export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Peringatan', 'Email dan password tidak boleh kosong!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Login berhasil → arahkan ke Home
+        Alert.alert('Berhasil! 🎉', `Selamat datang kembali, ${data.user.profile?.nama || data.user.email}!`);
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Login Gagal', data.message || 'Email atau password salah.');
+      }
+    } catch (error) {
+      Alert.alert(
+        'Koneksi Gagal',
+        'Tidak dapat terhubung ke server. Pastikan backend API sedang berjalan.\n\nJika pakai HP fisik, ubah API_URL di LoginScreen.tsx ke IP laptop Anda.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -109,11 +148,16 @@ export default function LoginScreen({ navigation }: Props) {
 
         {/* Login Button */}
         <TouchableOpacity
-          style={styles.loginButton}
-          onPress={() => navigation.navigate("CreateProfile")}
+          style={[styles.loginButton, loading && { opacity: 0.7 }]}
+          onPress={handleLogin}
           activeOpacity={0.85}
+          disabled={loading}
         >
-          <Text style={styles.loginButtonText}>Login</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginButtonText}>Login</Text>
+          )}
         </TouchableOpacity>
 
         {/* Divider */}

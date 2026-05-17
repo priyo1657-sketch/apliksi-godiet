@@ -136,7 +136,7 @@ export default function RecipesListScreen({ navigation }: any) {
       console.log('[AI] Meminta rekomendasi...');
       const result = await getRecommendations(profile);
       
-      let validRecs = [];
+      let validRecs: MenuRecommendation[] = [];
       if (result.recommendations && result.recommendations.length > 0) {
         validRecs = result.recommendations.filter(r => r.nama_menu && r.nama_menu.trim() !== '');
       }
