@@ -12,9 +12,10 @@ import {
 import { Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
+import { useUser } from "../../../context/UserContext";
 
 // Komponen Gauge Setengah Lingkaran
-const SemiCircleGauge = ({ percent }: { percent: number }) => {
+const SemiCircleGauge = ({ percent, targetKcal }: { percent: number; targetKcal: number }) => {
   const size = 200,
     sw = 12,
     r = (size - sw) / 2,
@@ -45,7 +46,7 @@ const SemiCircleGauge = ({ percent }: { percent: number }) => {
       </Svg>
       <View style={{ position: "absolute", bottom: 0, alignItems: "center" }}>
         <Text style={{ fontSize: 28, fontWeight: "800", color: "#FFF" }}>
-          1500
+          {targetKcal}
         </Text>
         <Text style={{ fontSize: 12, color: "#FFF", fontWeight: "600" }}>
           KCAL
@@ -108,67 +109,115 @@ const MacroCircle = ({
 
 export const CaloriesTabScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { user, isDarkMode } = useUser();
+  const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
+
+  // --- TEMA DINAMIS ---
+  const theme = {
+    bg: isDarkMode ? "#121212" : "#FFFFFF",
+    text: isDarkMode ? "#FFFFFF" : "#1A1A1A",
+    textSecondary: isDarkMode ? "#A0A0A0" : "#757575",
+    border: isDarkMode ? "#2C2C2C" : "#F0F0F0",
+    cardBg: isDarkMode ? "#1E1E1E" : "#FFFFFF",
+    imgBg: isDarkMode ? "#2C2C2C" : "#F5F5F5",
+  };
+  
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image
             source={{
-              uri: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop",
+              uri: user?.foto_profil || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
             }}
             style={styles.avatar}
           />
           <View>
-            <Text style={styles.name}>Hi, Ays</Text>
-            <Text style={styles.date}>Today, 4 Aug</Text>
+            <Text style={[styles.name, { color: theme.text }]}>Hi, {displayName}</Text>
+            <Text style={[styles.date, { color: theme.textSecondary }]}>Today, 4 Aug</Text>
           </View>
         </View>
-        <Feather name="bell" size={24} color="#333" />
+        <Feather name="bell" size={24} color={isDarkMode ? "#FFFFFF" : "#333"} />
       </View>
 
       <View style={styles.greenCard}>
         <Text style={styles.cardTitle}>My Calories </Text>
-        <View style={styles.gaugeContainer}>
-          <SemiCircleGauge percent={75} />
-        </View>
-        <View style={styles.macrosRow}>
-          <View style={styles.macroItem}>
-            <MacroCircle percent={46} color="#FFF" />
-            <Text style={styles.macroLabel}>Karbohidrat</Text>
-            <Text style={styles.macroVal}>15g / 300 gr</Text>
-          </View>
-          <View style={styles.macroItem}>
-            <MacroCircle percent={74} color="#FFF" />
-            <Text style={styles.macroLabel}>Protein</Text>
-            <Text style={styles.macroVal}>40g / 150 gr</Text>
-          </View>
-          <View style={styles.macroItem}>
-            <MacroCircle percent={14} color="#FFF" />
-            <Text style={styles.macroLabel}>Lemak</Text>
-            <Text style={styles.macroVal}>40g / 150 gr</Text>
-          </View>
-        </View>
+        {(() => {
+          const targetKcal = user?.target_kalori_harian && user.target_kalori_harian > 0 
+            ? Math.round(user.target_kalori_harian) 
+            : 2000;
+
+          const targetCarbs = Math.round((targetKcal * 0.5) / 4);
+          const targetProtein = Math.round((targetKcal * 0.3) / 4);
+          const targetFats = Math.round((targetKcal * 0.2) / 9);
+
+          const consumedKcal = 690; // dummy
+          const consumedCarbs = 15; // dummy
+          const consumedProtein = 42; // dummy
+          const consumedFats = 7; // dummy
+
+          const percentKcal = Math.min(100, Math.round((consumedKcal / targetKcal) * 100));
+          const percentCarbs = Math.min(100, Math.round((consumedCarbs / targetCarbs) * 100));
+          const percentProtein = Math.min(100, Math.round((consumedProtein / targetProtein) * 100));
+          const percentFats = Math.min(100, Math.round((consumedFats / targetFats) * 100));
+
+          return (
+            <>
+              {/* Progress Ring Utama */}
+              <View style={styles.gaugeContainer}>
+                <SemiCircleGauge percent={percentKcal} targetKcal={targetKcal} />
+              </View>
+
+              {/* Detail Makronutrisi */}
+              <View style={styles.macrosRow}>
+                <View style={styles.macroItem}>
+                  <MacroCircle percent={percentCarbs} color="#FFE082" />
+                  <Text style={styles.macroLabel}>Carbs</Text>
+                  <Text style={styles.macroVal}>
+                    {consumedCarbs}/{targetCarbs}g
+                  </Text>
+                </View>
+
+                <View style={styles.macroItem}>
+                  <MacroCircle percent={percentProtein} color="#81C784" />
+                  <Text style={styles.macroLabel}>Protein</Text>
+                  <Text style={styles.macroVal}>
+                    {consumedProtein}/{targetProtein}g
+                  </Text>
+                </View>
+
+                <View style={styles.macroItem}>
+                  <MacroCircle percent={percentFats} color="#FF8A65" />
+                  <Text style={styles.macroLabel}>Fats</Text>
+                  <Text style={styles.macroVal}>
+                    {consumedFats}/{targetFats}g
+                  </Text>
+                </View>
+              </View>
+            </>
+          );
+        })()}
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Meals today</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Meals today</Text>
         <Text style={styles.seeAll}>All</Text>
       </View>
 
       {[1, 2, 3].map((item, index) => (
         <TouchableOpacity
           key={index}
-          style={styles.mealCard}
+          style={[styles.mealCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
           activeOpacity={0.8}
           // 3. SEKARANG NAVIGATION BISA BERFUNGSI MENGARAH KE DAFTAR RESEP
           onPress={() => navigation.navigate("RecipesList")} 
         >
-          <View style={styles.mealImagePlaceholder}>
+          <View style={[styles.mealImagePlaceholder, { backgroundColor: theme.imgBg }]}>
             <Text>🥪</Text>
           </View>
 
           <View style={{ flex: 1, marginLeft: 16 }}>
-            <Text style={styles.mealName}>
+            <Text style={[styles.mealName, { color: theme.text }]}>
               {index === 0 ? "Sarapan" : index === 1 ? "Makan Siang" : "Makan Malam"}
             </Text>
             <Text style={styles.mealKcal}>230 Kcal</Text>

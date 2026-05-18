@@ -2,9 +2,9 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Platform } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import { EXERCISES } from "./ExerciseScreen";
 
 export default function WorkoutDetailScreen({ navigation }: any) {
-  const exercises = [1, 2, 3]; // Dummy data untuk 3 gerakan
 
   return (
     <View style={styles.container}>
@@ -46,18 +46,18 @@ export default function WorkoutDetailScreen({ navigation }: any) {
 
           <Text style={styles.sectionTitle}>Program Olahraga</Text>
           
-          {exercises.map((item, index) => (
+          {EXERCISES.map((item, index) => (
             <View key={index} style={styles.exerciseCard}>
               <Image 
-                source={{ uri: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=200&h=200&fit=crop" }} 
+                source={{ uri: item.image }} 
                 style={styles.exerciseImg} 
               />
               <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>Arm Raises</Text>
-                <Text style={styles.exerciseSets}>Set 1 : 20 reps</Text>
+                <Text style={styles.exerciseName}>{item.name}</Text>
+                <Text style={styles.exerciseSets}>{item.duration} detik</Text>
               </View>
-              <TouchableOpacity>
-                <Ionicons name="play-circle" size={28} color="#333" />
+              <TouchableOpacity onPress={() => navigation.navigate("GetReady")}>
+                <Ionicons name="play-circle" size={28} color="#00B93F" />
               </TouchableOpacity>
             </View>
           ))}

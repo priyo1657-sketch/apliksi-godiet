@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { RootStackParamList } from "../../../App";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
+import { useUser } from "../../context/UserContext";
 
 // Dimensions imported but not used for specific values
 
@@ -33,6 +34,7 @@ const moods: Mood[] = [
 ];
 
 export default function MoodSelectionScreen({ navigation }: Props) {
+  const { setMoodEmoji } = useUser();
   const [selectedMood, setSelectedMood] = useState<string>("1");
 
   return (
@@ -109,14 +111,18 @@ export default function MoodSelectionScreen({ navigation }: Props) {
         <TouchableOpacity
           style={styles.doneButton}
           onPress={() => {
-            // Navigate to Home / Dashboard after mood selection
+            const currentEmoji = moods.find((m) => m.id === selectedMood)?.emoji ?? "😊";
+            setMoodEmoji(currentEmoji);
             navigation.navigate("Home");
           }}
           activeOpacity={0.85}
         >
           <Text style={styles.doneButtonText}>Selanjutnya</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+        <TouchableOpacity onPress={() => {
+          setMoodEmoji("😊");
+          navigation.navigate("Home");
+        }}>
           <Text style={styles.levelText}>Lewati</Text>
         </TouchableOpacity>
       </View>

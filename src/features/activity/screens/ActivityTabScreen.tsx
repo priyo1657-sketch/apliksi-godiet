@@ -11,9 +11,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { RootStackParamList } from "../../../../App";
+import { useUser } from "../../../context/UserContext";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,6 +27,7 @@ function ProgressCircle({
   percent: number;
   size?: number;
 }) {
+  const { isDarkMode } = useUser();
   const sw = 3; // Stroke width
   const r = (size - sw) / 2;
   const c = 2 * Math.PI * r;
@@ -42,7 +45,7 @@ function ProgressCircle({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke="#E0E0E0"
+          stroke={isDarkMode ? "#333" : "#E0E0E0"}
           strokeWidth={sw}
           fill="none"
         />
@@ -60,7 +63,7 @@ function ProgressCircle({
           origin={`${size / 2},${size / 2}`}
         />
       </Svg>
-      <Text style={{ fontSize: 12, fontWeight: "700", color: "#333" }}>
+      <Text style={{ fontSize: 12, fontWeight: "700", color: isDarkMode ? "#FFF" : "#333" }}>
         {percent}%
       </Text>
     </View>
@@ -69,53 +72,84 @@ function ProgressCircle({
 
 export const ActivityTabScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
+  const { user, workoutHistory, deleteWorkoutHistory, isDarkMode } = useUser();
+  const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
+
+  // --- TEMA DINAMIS ---
+  const theme = {
+    bg: isDarkMode ? "#121212" : "#FFFFFF",
+    text: isDarkMode ? "#FFFFFF" : "#1A1A1A",
+    textSecondary: isDarkMode ? "#A0A0A0" : "#757575",
+    border: isDarkMode ? "#2C2C2C" : "#F0F0F0",
+    cardBg: isDarkMode ? "#1E1E1E" : "#FFFFFF",
+    circleBg: isDarkMode ? "#2C2C2C" : "#E0E0E0",
+  };
+
+  const handleDeleteHistory = (id: string) => {
+    Alert.alert(
+      "Hapus Riwayat 🗑️",
+      "Apakah Anda yakin ingin menghapus catatan latihan ini? Tindakan ini tidak dapat dibatalkan.",
+      [
+        { text: "Batal", style: "cancel" },
+        { 
+          text: "Hapus", 
+          style: "destructive", 
+          onPress: () => deleteWorkoutHistory(id) 
+        }
+      ]
+    );
+  };
+
+  // Calculate totals from history
+  const totalBurned = workoutHistory.reduce((acc, curr) => acc + curr.caloriesBurned, 0);
+  const totalWorkouts = workoutHistory.length;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image
             source={{
-              uri: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop",
+              uri: user?.foto_profil || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
             }}
             style={styles.avatar}
           />
           <View>
-            <Text style={styles.name}>Hi, Ays</Text>
-            <Text style={styles.date}>Today, 4 Aug</Text>
+            <Text style={[styles.name, { color: theme.text }]}>Hi, {displayName}</Text>
+            <Text style={[styles.date, { color: theme.textSecondary }]}>Today, 4 Aug</Text>
           </View>
         </View>
         <View style={styles.headerIcons}>
           {/* 🔴 Ganti emoji dengan Feather Icons */}
           <TouchableOpacity style={styles.iconBtn}>
-            <Feather name="search" size={24} color="#333" />
+            <Feather name="search" size={24} color={isDarkMode ? "#FFF" : "#333"} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn}>
-            <Feather name="bell" size={24} color="#333" />
+            <Feather name="bell" size={24} color={isDarkMode ? "#FFF" : "#333"} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Weekly Progress Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weekly prosess</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Weekly prosess</Text>
 
         {/* Stats Row */}
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Berat 👏</Text>
-            <Text style={styles.statValue}>54 kg</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Berat 👏</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{user?.berat_badan || 0} kg</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Kalori{"\n"}Terbakar 🔥</Text>
-            <Text style={styles.statValue}>3.400</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Kalori{"\n"}Terbakar 🔥</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{totalBurned}</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Olahraga 🏃</Text>
-            <Text style={styles.statValue}>45</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Olahraga 🏃</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{totalWorkouts}</Text>
           </View>
         </View>
 
@@ -143,7 +177,7 @@ export const ActivityTabScreen: React.FC = () => {
       {/* Today's Workout Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today workout</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Today workout</Text>
           <TouchableOpacity>
             <Feather name="chevron-right" size={24} color="#888" />
           </TouchableOpacity>
@@ -181,35 +215,47 @@ export const ActivityTabScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* Workout Goals Section */}
+      {/* Workout History Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Workout goals</Text>
-          <TouchableOpacity>
-            <Feather name="chevron-right" size={24} color="#888" />
-          </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Riwayat Olahraga</Text>
         </View>
 
-        {[1, 2, 3].map((item) => (
-          <TouchableOpacity
-            key={item}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate("Exercise")}
-            style={styles.goalItem}
-          >
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=100&h=100&fit=crop",
-              }}
-              style={styles.goalImage}
-            />
-            <View style={styles.goalTextContainer}>
-              <Text style={styles.goalTitle}>Arm Raises</Text>
-              <Text style={styles.goalTime}>00:53</Text>
-            </View>
-            <ProgressCircle percent={37} />
-          </TouchableOpacity>
-        ))}
+        {workoutHistory.length === 0 ? (
+          <View style={{ alignItems: "center", paddingVertical: 20 }}>
+            <Text style={{ color: "#888" }}>Belum ada riwayat olahraga.</Text>
+          </View>
+        ) : (
+          workoutHistory.map((item) => {
+            const d = new Date(item.date);
+            const dateString = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+            const timeString = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+            
+            return (
+              <View key={item.id} style={[styles.goalItem, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <View style={[styles.historyIconWrapper, { backgroundColor: isDarkMode ? "#1A2E20" : "#E8FDF0" }]}>
+                  <Feather name="activity" size={24} color="#00B93F" />
+                </View>
+                <View style={styles.goalTextContainer}>
+                  <Text style={[styles.goalTitle, { color: theme.text }]}>{dateString} - {timeString}</Text>
+                  <Text style={[styles.goalTime, { color: theme.textSecondary }]}>
+                    {item.totalTimeSeconds} dtk • {item.caloriesBurned} kcal
+                  </Text>
+                  <Text style={[styles.historyDetails, { color: theme.textSecondary }]} numberOfLines={1}>
+                    Selesai s.d: {item.exercisesCompleted[item.exercisesCompleted.length - 1]}
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => handleDeleteHistory(item.id)} 
+                  activeOpacity={0.7}
+                  style={{ justifyContent: "center", alignItems: "center", paddingHorizontal: 8 }}
+                >
+                  <Feather name="trash-2" size={20} color="#FF5252" />
+                </TouchableOpacity>
+              </View>
+            );
+          })
+        )}
       </View>
 
       {/* Bottom Banner */}
@@ -417,6 +463,20 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     marginRight: 16,
+  },
+  historyIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#E0F2E9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  historyDetails: {
+    fontSize: 11,
+    color: "#666",
+    marginTop: 4,
   },
   goalTextContainer: {
     flex: 1,

@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { StatusBar } from "react-native";
+import { UserProvider } from "./src/context/UserContext";
 
 import ActivityLevelScreen from "./src/features/login/ActivityLevelScreen";
 import CreateProfileScreen from "./src/features/login/CreateProfileScreen";
@@ -57,6 +58,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
+    <UserProvider>
     <NavigationContainer>
       <StatusBar barStyle="light-content" backgroundColor="#2DB34A" />
       <Stack.Navigator
@@ -94,5 +96,6 @@ export default function App() {
         <Stack.Screen name="Exercise" component={ExerciseScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+    </UserProvider>
   );
 }

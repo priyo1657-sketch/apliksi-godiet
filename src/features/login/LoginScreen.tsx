@@ -18,6 +18,7 @@ import {
 import { RootStackParamList } from "../../../App";
 import { Logo } from "../../components/Logo";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
+import { useUser } from "../../context/UserContext";
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "Login">;
 };
@@ -26,6 +27,7 @@ type Props = {
 const API_URL = 'https://web-production-78ab8.up.railway.app';
 
 export default function LoginScreen({ navigation }: Props) {
+  const { setUser } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -49,8 +51,22 @@ export default function LoginScreen({ navigation }: Props) {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Login berhasil → arahkan ke Home
-        Alert.alert('Berhasil! 🎉', `Selamat datang kembali, ${data.user.profile?.nama || data.user.email}!`);
+        // Simpan data user ke context global
+        const profile = data.user.profile;
+        setUser({
+          id_user: data.user.id_user,
+          email: data.user.email,
+          role: data.user.role,
+          nama: profile?.nama || '',
+          berat_badan: profile?.berat_badan || 0,
+          tinggi_badan: profile?.tinggi_badan || 0,
+          usia: profile?.usia || 0,
+          jenis_kelamin: profile?.jenis_kelamin || '',
+          tingkat_aktivitas: profile?.tingkat_aktivitas || '',
+          target_kalori_harian: profile?.target_kalori_harian || 0,
+          foto_profil: profile?.foto_profil || '',
+        });
+        Alert.alert('Berhasil! 🎉', `Selamat datang kembali, ${profile?.nama || data.user.email}!`);
         navigation.navigate('Home');
       } else {
         Alert.alert('Login Gagal', data.message || 'Email atau password salah.');

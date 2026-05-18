@@ -23,6 +23,7 @@ import {
   MenuRecommendation,
   DietProfile,
 } from '../../../services/api';
+import { useUser } from "../../../context/UserContext";
 import recipeDetailsData from '../../../data/cookpad_diet_results.json';
 
 const { width } = Dimensions.get('window');
@@ -104,6 +105,9 @@ function NutritionCircle({ label, value, max, color }: { label: string; value: n
 }
 
 export default function RecipesListScreen({ navigation }: any) {
+  const { user } = useUser();
+  const displayName = user?.nama ? user.nama.split(' ')[0] : 'User';
+
   const [profile] = useState<DietProfile>({
     jk: 'l', umur: 25, tb: 175, bb: 70, tujuan: 'tetap_bugar',
   });
@@ -237,11 +241,11 @@ export default function RecipesListScreen({ navigation }: any) {
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80' }}
+              source={{ uri: user?.foto_profil || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop' }}
               style={styles.avatar}
             />
             <View>
-              <Text style={styles.subGreeting}>Your Breakfast</Text>
+              <Text style={styles.subGreeting}>{displayName}'s {activeCategory}</Text>
               <Text style={styles.dateText}>{getTodayDate()}</Text>
             </View>
           </View>

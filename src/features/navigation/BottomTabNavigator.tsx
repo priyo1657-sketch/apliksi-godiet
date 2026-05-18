@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Colors, Spacing } from "../../theme/colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useUser } from "../../context/UserContext";
 
 export type TabName = "Home" | "Calories" | "Scanner" | "Activity" | "Profile";
 
@@ -37,9 +38,17 @@ export const BottomTabNavigator: React.FC<BottomTabProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const { isDarkMode } = useUser();
+
+  const theme = {
+    bg: isDarkMode ? "#1A1A1A" : Colors.white,
+    border: isDarkMode ? "#2C2C2C" : (Colors.gray100 || "#F0F0F0"),
+    floatingBorder: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.bg }]}>
+      <View style={[styles.container, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.name;
 
@@ -48,7 +57,7 @@ export const BottomTabNavigator: React.FC<BottomTabProps> = ({
             return (
               <View key={tab.name} style={styles.floatingButtonContainer}>
                 <TouchableOpacity
-                  style={styles.floatingButton}
+                  style={[styles.floatingButton, { borderColor: theme.floatingBorder }]}
                   onPress={() => onTabChange(tab.name)}
                   activeOpacity={0.9}
                 >
@@ -73,12 +82,12 @@ export const BottomTabNavigator: React.FC<BottomTabProps> = ({
               <MaterialCommunityIcons
                 name={tab.iconName}
                 size={26}
-                color={isActive ? "#4CAF50" : "#A0A0A0"} // Hijau jika aktif, abu-abu jika tidak
+                color={isActive ? "#4CAF50" : (isDarkMode ? "#777777" : "#A0A0A0")} // Hijau jika aktif
               />
               <Text
                 style={[
                   styles.tabLabel,
-                  { color: isActive ? "#4CAF50" : "#A0A0A0" },
+                  { color: isActive ? "#4CAF50" : (isDarkMode ? "#777777" : "#A0A0A0") },
                   isActive && styles.tabLabelActive,
                 ]}
               >
