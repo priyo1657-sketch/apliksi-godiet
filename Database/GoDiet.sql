@@ -77,3 +77,15 @@ CREATE TABLE reports (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE
 );
+
+CREATE TABLE reports (
+    id_report VARCHAR(50) PRIMARY KEY,
+    id_user VARCHAR(50),
+    username VARCHAR(100),
+    judul VARCHAR(200),
+    isi_laporan TEXT,
+    kategori VARCHAR(50) DEFAULT 'Umum',
+    status ENUM('pending', 'resolved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE
+);
