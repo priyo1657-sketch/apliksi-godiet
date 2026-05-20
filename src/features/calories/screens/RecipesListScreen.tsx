@@ -138,9 +138,9 @@ export default function RecipesListScreen({ navigation }: any) {
 
   // State menu dipisah per kategori, defaultnya fallback yang disebar
   const [categoryMenus, setCategoryMenus] = useState<Record<string, MenuRecommendation[]>>({
-    Breakfast: fallbackMeals.slice(0, 2),
-    Lunch: fallbackMeals.slice(2, 4),
-    Dinner: fallbackMeals.slice(0, 2).reverse(),
+    Breakfast: fallbackMeals,
+    Lunch: fallbackMeals,
+    Dinner: fallbackMeals,
   });
 
   const [activeCategory, setActiveCategory] = useState('Breakfast');
@@ -154,13 +154,28 @@ export default function RecipesListScreen({ navigation }: any) {
   const [selectedItem, setSelectedItem] = useState<MenuRecommendation | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<any>(null);
 
-  // ── Distribusi menu ke 3 kategori ─────────────────────────────────
+  // ── Distribusi menu ke 3 kategori (Tanpa Duplikat) ───────────────
   const distributeMenus = (pool: MenuRecommendation[]) => {
-    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    // 1. Filter agar unik berdasarkan URL (menghindari duplikasi)
+    const uniqueMap = new Map();
+    pool.forEach(item => {
+      if (!uniqueMap.has(item.url)) {
+        uniqueMap.set(item.url, item);
+      }
+    });
+    const uniquePool = Array.from(uniqueMap.values());
+
+    // 2. Acak urutan
+    const shuffled = uniquePool.sort(() => 0.5 - Math.random());
+
+    // 3. Bagi rata ke 3 kategori
+    const third = Math.ceil(shuffled.length / 3);
+    
+    // Kita simpan maksimal 18 per kategori di cache (supaya tidak boros memori)
     return {
-      Breakfast: shuffled.slice(0, 2),
-      Lunch: shuffled.slice(2, 4),
-      Dinner: shuffled.slice(4, 6),
+      Breakfast: shuffled.slice(0, third).slice(0, 18),
+      Lunch: shuffled.slice(third, third * 2).slice(0, 18),
+      Dinner: shuffled.slice(third * 2, shuffled.length).slice(0, 18),
     };
   };
 
@@ -275,9 +290,9 @@ export default function RecipesListScreen({ navigation }: any) {
           </View>
           <Text style={styles.cardKcal}>{Math.round(item.kalori)} Kcal</Text>
         </View>
-        {item.skor_agen > 0 && (
+        {item.is_ai_recommended && (
           <View style={styles.aiBadge}>
-            <Text style={styles.aiBadgeText}>AI</Text>
+            <Text style={styles.aiBadgeText}>AI 👍</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -363,9 +378,9 @@ export default function RecipesListScreen({ navigation }: any) {
           ))}
         </View>
 
-        {/* Grid menggunakan state categoryMenus berdasarkan tab yang aktif */}
+        {/* Grid menggunakan state categoryMenus berdasarkan tab yang aktif (Tampilkan 6 item) */}
         <FlatList
-          data={categoryMenus[activeCategory]}
+          data={categoryMenus[activeCategory]?.slice(0, 6) || []}
           renderItem={renderCard}
           keyExtractor={(item, i) => `${item.url}-${i}`}
           numColumns={2}

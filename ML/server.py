@@ -162,6 +162,7 @@ class MenuRecommendation(BaseModel):
     bahan: str
     skor_agen: float
     dipilih_kali: int
+    is_ai_recommended: bool = False
 
 class NutritionTarget(BaseModel):
     kalori: float
@@ -220,11 +221,14 @@ def run_inference(profil: dict, top_k: int = 5, n_rollout: int = 200) -> tuple:
     )
 
     recs = []
+    ai_urls = set()
     for nama, data in ranked[:top_k]:
         row = data["row"]
+        url = str(row.get("url", ""))
+        ai_urls.add(url)
         recs.append({
             "nama_menu"    : nama,
-            "url"          : str(row.get("url", "")),
+            "url"          : url,
             "kalori"       : round(float(row["kalori"]), 1),
             "protein_g"    : round(float(row["protein_g"]), 1),
             "karbohidrat_g": round(float(row["karbohidrat_g"]), 1),
@@ -233,7 +237,31 @@ def run_inference(profil: dict, top_k: int = 5, n_rollout: int = 200) -> tuple:
             "bahan"        : str(row.get("bahan", "")),
             "skor_agen"    : round(data["total_reward"] / data["count"], 4),
             "dipilih_kali" : data["count"],
+            "is_ai_recommended": True,
         })
+
+    # --- PADDING: Jika hasil AI kurang dari top_k, ambil acak dari database ---
+    missing_count = top_k - len(recs)
+    if missing_count > 0 and db is not None:
+        # Filter database: buang yang sudah ada di recs
+        available = db[~db['url'].isin(ai_urls)]
+        if not available.empty:
+            pad_size = min(missing_count, len(available))
+            padding_rows = available.sample(n=pad_size)
+            for _, row in padding_rows.iterrows():
+                recs.append({
+                    "nama_menu"    : str(row.get("nama_menu", "")),
+                    "url"          : str(row.get("url", "")),
+                    "kalori"       : round(float(row["kalori"]), 1),
+                    "protein_g"    : round(float(row["protein_g"]), 1),
+                    "karbohidrat_g": round(float(row["karbohidrat_g"]), 1),
+                    "lemak_g"      : round(float(row["lemak_g"]), 1),
+                    "serat_g"      : round(float(row.get("serat_g", 0)), 1),
+                    "bahan"        : str(row.get("bahan", "")),
+                    "skor_agen"    : 0.0,
+                    "dipilih_kali" : 0,
+                    "is_ai_recommended": False,
+                })
 
     return recs, target
 
@@ -297,7 +325,7 @@ async def recommend_menu(profile: UserProfile):
     }
 
     try:
-        recs, target = run_inference(profil, top_k=5, n_rollout=200)
+        recs, target = run_inference(profil, top_k=60, n_rollout=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
