@@ -22,8 +22,10 @@ import {
   checkServerHealth,
   MenuRecommendation,
   DietProfile,
+  NutritionTarget,
 } from '../../../services/api';
 import { useUser } from "../../../context/UserContext";
+import { loadMenuCache, saveMenuCache, createProfileHash } from '../../../services/menuCache';
 import recipeDetailsData from '../../../data/cookpad_diet_results.json';
 
 const { width } = Dimensions.get('window');
@@ -108,9 +110,31 @@ export default function RecipesListScreen({ navigation }: any) {
   const { user } = useUser();
   const displayName = user?.nama ? user.nama.split(' ')[0] : 'User';
 
-  const [profile] = useState<DietProfile>({
-    jk: 'l', umur: 25, tb: 175, bb: 70, tujuan: 'tetap_bugar',
-  });
+  // ── Profil diet diambil dari UserContext (bukan hardcoded) ─────────
+  const profile: DietProfile = React.useMemo(() => {
+    if (!user) return { jk: 'l', umur: 25, tb: 175, bb: 70, tujuan: 'tetap_bugar' as const };
+
+    // Map jenis_kelamin dari profil user ke format yang dipakai ML server
+    const jk = (user.jenis_kelamin || '').toLowerCase();
+    const jkMapped = ['perempuan', 'p', 'female', 'f', 'wanita'].includes(jk) ? 'p' : 'l';
+
+    // Map tingkat_aktivitas ke tujuan diet
+    const tujuanMap: Record<string, DietProfile['tujuan']> = {
+      'turun_berat': 'turun_berat',
+      'tetap_bugar': 'tetap_bugar',
+      'lebih_kuat': 'lebih_kuat',
+      'massa_otot': 'massa_otot',
+    };
+    const tujuan = tujuanMap[user.tingkat_aktivitas] || 'tetap_bugar';
+
+    return {
+      jk: jkMapped,
+      umur: user.usia || 25,
+      tb: user.tinggi_badan || 175,
+      bb: user.berat_badan || 70,
+      tujuan,
+    };
+  }, [user]);
 
   // State menu dipisah per kategori, defaultnya fallback yang disebar
   const [categoryMenus, setCategoryMenus] = useState<Record<string, MenuRecommendation[]>>({
@@ -123,23 +147,35 @@ export default function RecipesListScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuRecommendation | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<any>(null);
 
-  const fetchRecommendations = useCallback(async () => {
+  // ── Distribusi menu ke 3 kategori ─────────────────────────────────
+  const distributeMenus = (pool: MenuRecommendation[]) => {
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    return {
+      Breakfast: shuffled.slice(0, 2),
+      Lunch: shuffled.slice(2, 4),
+      Dinner: shuffled.slice(4, 6),
+    };
+  };
+
+  // ── Fetch dari server AI ──────────────────────────────────────────
+  const fetchFromServer = useCallback(async (): Promise<boolean> => {
     try {
       console.log('[AI] Memeriksa health server...');
       const health = await checkServerHealth();
       setServerOnline(health.model_loaded);
 
-      if (!health.model_loaded) return;
+      if (!health.model_loaded) return false;
 
       console.log('[AI] Meminta rekomendasi...');
       const result = await getRecommendations(profile);
-      
+
       let validRecs: MenuRecommendation[] = [];
       if (result.recommendations && result.recommendations.length > 0) {
         validRecs = result.recommendations.filter(r => r.nama_menu && r.nama_menu.trim() !== '');
@@ -147,33 +183,63 @@ export default function RecipesListScreen({ navigation }: any) {
 
       // Gabungkan hasil AI dengan fallback agar data cukup untuk 3 kategori (minimal 6 item)
       const pool = [...validRecs, ...fallbackMeals];
-      
-      // Acak urutan agar setiap tab dapat menu berbeda setiap di-refresh
-      const shuffled = pool.sort(() => 0.5 - Math.random());
+      const distributed = distributeMenus(pool);
 
-      // Sebarkan ke Breakfast, Lunch, Dinner (masing-masing 2)
-      // Data ini akan MENETAP di state meskipun tab diubah, dan hanya berubah jika tombol refresh ditekan
-      setCategoryMenus({
-        Breakfast: shuffled.slice(0, 2),
-        Lunch: shuffled.slice(2, 4),
-        Dinner: shuffled.slice(4, 6),
-      });
+      setCategoryMenus(distributed);
+      setFromCache(false);
 
+      // Simpan ke cache lokal
+      await saveMenuCache(profile, distributed, result.target || null, true);
+      console.log('[AI] Rekomendasi berhasil dimuat & di-cache ✅');
+      return true;
     } catch (error: any) {
       console.log('[AI] Error:', error.message);
       setServerOnline(false);
+      return false;
+    }
+  }, [profile]);
+
+  // ── Load menu: cek cache dulu, baru fetch jika perlu ──────────────
+  const loadMenus = useCallback(async (forceRefresh = false) => {
+    try {
+      // 1. Jika bukan force refresh, coba baca cache dulu
+      if (!forceRefresh) {
+        const cached = await loadMenuCache(profile);
+        if (cached) {
+          console.log('[AI] Menggunakan cache — tanpa request ke server 🚀');
+          setCategoryMenus(cached.menus);
+          setServerOnline(cached.fromServer);
+          setFromCache(true);
+          setLoading(false);
+          setRefreshing(false);
+          return;
+        }
+      }
+
+      // 2. Cache miss atau force refresh → fetch dari server
+      console.log(forceRefresh ? '[AI] Force refresh — bypass cache' : '[AI] Cache miss — fetch dari server');
+      const success = await fetchFromServer();
+
+      // 3. Jika server gagal dan tidak ada cache, pakai fallback
+      if (!success) {
+        const fallbackDistributed = distributeMenus(fallbackMeals);
+        setCategoryMenus(fallbackDistributed);
+        setFromCache(false);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [profile]);
+  }, [profile, fetchFromServer]);
 
-  useEffect(() => { fetchRecommendations(); }, [fetchRecommendations]);
+  // ── Initial load ──────────────────────────────────────────────────
+  useEffect(() => { loadMenus(false); }, [loadMenus]);
 
+  // Manual refresh selalu bypass cache → fetch ulang dari server
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchRecommendations();
-  }, [fetchRecommendations]);
+    loadMenus(true);
+  }, [loadMenus]);
 
   const getTodayDate = () => {
     const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
@@ -255,6 +321,14 @@ export default function RecipesListScreen({ navigation }: any) {
         </View>
 
         {/* Server Status */}
+        {/* Cache indicator */}
+        {fromCache && serverOnline && (
+          <View style={styles.cacheBanner}>
+            <Feather name="database" size={13} color="#1565C0" />
+            <Text style={styles.cacheText}>Menu dari cache lokal. Pull down untuk refresh.</Text>
+          </View>
+        )}
+
         {!serverOnline && (
           <TouchableOpacity style={styles.offlineBanner} onPress={onRefresh}>
             <Feather name="cloud-off" size={13} color="#E65100" />
@@ -466,6 +540,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
   },
   offlineText: { fontSize: 11, color: '#E65100', flex: 1 },
+
+  // Cache banner
+  cacheBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#E3F2FD', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
+  },
+  cacheText: { fontSize: 11, color: '#1565C0', flex: 1 },
 
   // Title
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 12 },

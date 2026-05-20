@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { invalidateMenuCache, hasDietProfileChanged } from '../services/menuCache';
 
 const API_URL = 'https://web-production-78ab8.up.railway.app';
 
@@ -119,6 +120,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
     if (!user) return false;
 
+    // Cek apakah field diet berubah → invalidasi cache menu
+    if (hasDietProfileChanged(user, updates)) {
+      console.log('[UserContext] Profil diet berubah — menu cache di-invalidate.');
+      await invalidateMenuCache();
+    }
+
     const updated = { ...user, ...updates };
 
     try {
@@ -165,10 +172,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     AsyncStorage.setItem('godiet_workout_history', JSON.stringify(updatedHistory));
   };
 
-  // Fungsi logout — hapus semua data lokal
+  // Fungsi logout — hapus semua data lokal termasuk cache menu
   const logout = async () => {
     setUserState(null);
     await AsyncStorage.removeItem('godiet_user');
+    await invalidateMenuCache();
   };
 
   return (
