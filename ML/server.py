@@ -122,7 +122,7 @@ async def lifespan(app: FastAPI):
     if HAS_GENAI and GEMINI_API_KEY:
         try:
             genai.configure(api_key=GEMINI_API_KEY)
-            model_state["gemini_model"] = genai.GenerativeModel("gemini-1.5-flash-8b")
+            model_state["gemini_model"] = genai.GenerativeModel("gemini-2.0-flash")
             print(f"[✓] Gemini Vision API dikonfigurasi")
         except Exception as e:
             print(f"[!] Gagal konfigurasi Gemini: {e}")
