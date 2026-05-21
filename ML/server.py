@@ -22,8 +22,15 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 import io
+import base64
 from io import BytesIO
 from PIL import Image
+
+try:
+    import google.generativeai as genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
 
 import numpy as np
 import pandas as pd
@@ -55,12 +62,14 @@ BASE_DIR   = Path(__file__).parent
 MODEL_PATH = BASE_DIR / "ppo_food_agent.pt"
 JSON_PATH  = BASE_DIR / "nutrition_results.json"
 YOLO_MODEL_PATH = BASE_DIR / "best.pt"
+GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY", "")
 
 # ── Global State ─────────────────────────────────────────────────────────────
 model_state = {
     "model": None,
     "db": None,
     "yolo_model": None,
+    "gemini_model": None,
     "ready": False,
 }
 
@@ -109,6 +118,20 @@ async def lifespan(app: FastAPI):
     else:
         print("[!] Model YOLO (best.pt) belum tersedia atau ultralytics belum diinstall.")
 
+    # Load Gemini Vision Model
+    if HAS_GENAI and GEMINI_API_KEY:
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            model_state["gemini_model"] = genai.GenerativeModel("gemini-2.0-flash")
+            print(f"[✓] Gemini Vision API dikonfigurasi")
+        except Exception as e:
+            print(f"[!] Gagal konfigurasi Gemini: {e}")
+    else:
+        if not HAS_GENAI:
+            print("[!] google-generativeai belum diinstall.")
+        if not GEMINI_API_KEY:
+            print("[!] GEMINI_API_KEY belum diset. Set env variable GEMINI_API_KEY.")
+
     print("=" * 60)
     print("  Server siap menerima request!")
     print("  Docs: http://localhost:8000/docs")
@@ -120,6 +143,7 @@ async def lifespan(app: FastAPI):
     model_state["model"] = None
     model_state["db"] = None
     model_state["yolo_model"] = None
+    model_state["gemini_model"] = None
     model_state["ready"] = False
     print("[INFO] Server shutdown.")
 
@@ -275,6 +299,7 @@ async def health_check():
         "status": "ok" if model_state["ready"] else "loading",
         "model_loaded": model_state["ready"],
         "yolo_loaded": model_state["yolo_model"] is not None,
+        "gemini_loaded": model_state["gemini_model"] is not None,
         "menu_count": len(model_state["db"]) if model_state["db"] is not None else 0,
         "device": str(DEVICE),
     }
@@ -350,7 +375,10 @@ async def recommend_menu(profile: UserProfile):
 @app.post("/api/scan")
 async def scan_food(file: UploadFile = File(...)):
     """
-    Endpoint untuk mendeteksi makanan dari gambar menggunakan YOLOv8.
+    [DISABLED - Menggunakan YOLO COCO yang terbatas]
+    Endpoint lama untuk mendeteksi makanan dari gambar menggunakan YOLOv8.
+    Hanya bisa mendeteksi 10 jenis makanan COCO (banana, apple, pizza, dll).
+    Gunakan /api/scan-gemini untuk akurasi lebih baik.
     """
     if model_state["yolo_model"] is None:
         raise HTTPException(status_code=503, detail="YOLO model (best.pt) belum diload.")
@@ -390,3 +418,128 @@ async def scan_food(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saat scan: {str(e)}")
+
+
+# ── PROMPT untuk Gemini Vision ───────────────────────────────────────────────
+GEMINI_FOOD_PROMPT = """
+Kamu adalah sistem AI pendeteksi dan penganalisis makanan untuk aplikasi diet.
+Analisis gambar ini dan identifikasi SEMUA makanan yang terlihat.
+
+Berikan respons HANYA dalam format JSON valid berikut (tanpa markdown, tanpa backtick, tanpa penjelasan tambahan):
+{
+  "detected_foods": [
+    {
+      "name": "Nama makanan dalam Bahasa Indonesia",
+      "name_en": "Food name in English",
+      "confidence": 0.95,
+      "kalori": 155.0,
+      "protein_g": 13.0,
+      "karbohidrat_g": 1.1,
+      "lemak_g": 11.0,
+      "serat_g": 0.0,
+      "porsi": "1 butir (50g)"
+    }
+  ]
+}
+
+Aturan:
+1. Identifikasi SEMUA makanan yang terlihat di gambar
+2. Gunakan nama makanan Indonesia yang umum (misal: Telur Rebus, Nasi Putih, Ayam Goreng, Tempe Goreng)
+3. Berikan estimasi nutrisi per porsi yang terlihat di gambar
+4. Confidence adalah angka 0.0-1.0 menunjukkan tingkat keyakinan deteksi
+5. Jika TIDAK ADA makanan terdeteksi, kembalikan {"detected_foods": []}
+6. Pastikan output adalah JSON valid, BUKAN markdown
+7. Nilai nutrisi harus dalam angka (float), bukan string
+"""
+
+
+@app.post("/api/scan-gemini")
+async def scan_food_gemini(file: UploadFile = File(...)):
+    """
+    Endpoint BARU untuk mendeteksi makanan dari gambar menggunakan Google Gemini Vision.
+    Jauh lebih akurat dari YOLO COCO — bisa mengenali makanan Indonesia.
+    """
+    if model_state["gemini_model"] is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Gemini Vision belum dikonfigurasi. Set GEMINI_API_KEY di environment."
+        )
+
+    try:
+        contents = await file.read()
+        image = Image.open(BytesIO(contents)).convert("RGB")
+
+        # Kirim gambar ke Gemini Vision API
+        response = model_state["gemini_model"].generate_content(
+            [image, GEMINI_FOOD_PROMPT],
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.1,  # Low temperature untuk konsistensi
+                max_output_tokens=2048,
+            ),
+        )
+
+        # Parse response JSON dari Gemini
+        response_text = response.text.strip()
+
+        # Bersihkan markdown code block jika ada
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            # Hapus baris pertama (```json) dan baris terakhir (```)
+            lines = [l for l in lines if not l.strip().startswith("```")]
+            response_text = "\n".join(lines)
+
+        result = json.loads(response_text)
+        detected = result.get("detected_foods", [])
+
+        # Coba cocokkan dengan database nutrisi untuk data lebih akurat
+        db = model_state.get("db")
+        if db is not None and not db.empty:
+            for food in detected:
+                food_name = food.get("name", "").lower()
+                food_name_en = food.get("name_en", "").lower()
+
+                # Cari di database berdasarkan nama menu atau bahan
+                best_match = None
+                best_score = 0
+
+                for _, row in db.iterrows():
+                    nama_menu = str(row.get("nama_menu", "")).lower()
+                    bahan = str(row.get("bahan", "")).lower()
+
+                    # Cek kecocokan nama
+                    if food_name in nama_menu or food_name_en in nama_menu:
+                        score = 90
+                    elif any(word in nama_menu for word in food_name.split() if len(word) > 2):
+                        score = 70
+                    elif any(word in bahan for word in food_name.split() if len(word) > 2):
+                        score = 50
+                    else:
+                        continue
+
+                    if score > best_score:
+                        best_score = score
+                        best_match = row
+
+                # Jika ditemukan kecocokan yang baik, gunakan data dari database
+                if best_match is not None and best_score >= 70:
+                    food["db_match"] = str(best_match.get("nama_menu", ""))
+                    food["db_url"] = str(best_match.get("url", ""))
+                    food["db_match_score"] = best_score
+
+        # Sort by confidence
+        detected = sorted(detected, key=lambda x: x.get("confidence", 0), reverse=True)
+
+        return {
+            "success": True,
+            "detected_foods": detected,
+            "message": "Deteksi berhasil" if detected else "Tidak ada makanan yang terdeteksi",
+            "engine": "gemini-vision",
+        }
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gagal parse respons Gemini: {str(e)}. Raw: {response_text[:200]}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saat scan Gemini: {str(e)}")

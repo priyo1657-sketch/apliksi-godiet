@@ -12,10 +12,11 @@ import {
   View,
   StatusBar,
   Alert,
+  ScrollView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { scanFood } from "../../../services/api";
+import { scanFood, DetectedFood } from "../../../services/api";
 
 type RootStackParamList = {
   RecipeAdded: undefined;
@@ -33,8 +34,8 @@ export const ScannerTabScreen: React.FC = () => {
   const cameraRef = useRef<CameraView>(null);
   
   const [isScanning, setIsScanning] = useState(false);
-  const [detectedFood, setDetectedFood] = useState<string | null>(null);
-  const [confidence, setConfidence] = useState<number | null>(null);
+  const [detectedFood, setDetectedFood] = useState<DetectedFood | null>(null);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -59,7 +60,7 @@ export const ScannerTabScreen: React.FC = () => {
     try {
       setIsScanning(true);
       setDetectedFood(null);
-      setConfidence(null);
+      setScanMessage(null);
       
       // Jepret gambar
       const photo = await cameraRef.current.takePictureAsync({
@@ -69,22 +70,22 @@ export const ScannerTabScreen: React.FC = () => {
 
       if (!photo) throw new Error("Gagal mengambil foto");
 
-      // Kirim ke server ML di Hugging Face
+      // Kirim ke server Hugging Face → Gemini Vision API
       const result = await scanFood(photo.uri);
       
-      if (result.success && result.detected_objects && result.detected_objects.length > 0) {
-        // Ambil objek dengan confidence tertinggi
-        const topObject = result.detected_objects[0];
-        setDetectedFood(topObject.label);
-        setConfidence(topObject.confidence);
+      if (result.success && result.detected_foods && result.detected_foods.length > 0) {
+        // Ambil makanan dengan confidence tertinggi
+        const topFood = result.detected_foods[0];
+        setDetectedFood(topFood);
+        setScanMessage(result.message);
       } else {
-        setDetectedFood("Tidak Dikenali");
+        setScanMessage("Tidak ada makanan yang terdeteksi");
       }
 
     } catch (error: any) {
       console.error(error);
-      Alert.alert("Error", error.message || "Gagal menghubungi server ML");
-      setDetectedFood("Gagal Scan");
+      Alert.alert("Error", error.message || "Gagal menghubungi Gemini Vision API");
+      setScanMessage("Gagal Scan");
     } finally {
       setIsScanning(false);
     }
@@ -150,25 +151,63 @@ export const ScannerTabScreen: React.FC = () => {
         {/* --- Hasil Scan (Floating Card di Bawah) --- */}
         <View style={styles.resultContainer}>
           <View style={styles.resultCard}>
-            <View style={styles.resultInfo}>
+            <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator={false}>
               {isScanning ? (
                 <View style={styles.loadingRow}>
                   <ActivityIndicator size="small" color="#2DB34A" />
                   <Text style={styles.foodName}>Menganalisis gambar...</Text>
                 </View>
-              ) : (
+              ) : detectedFood ? (
                 <>
-                  <Text style={styles.foodName}>
-                    {detectedFood ? detectedFood : "Arahkan & Scan Makanan"}
-                  </Text>
-                  {confidence && (
-                    <Text style={styles.foodDesc}>
-                      Tingkat keyakinan: {(confidence * 100).toFixed(0)}%
+                  {/* Nama Makanan & Confidence */}
+                  <View style={styles.foodHeaderRow}>
+                    <View style={styles.foodHeaderInfo}>
+                      <Text style={styles.foodName}>{detectedFood.name}</Text>
+                      <Text style={styles.foodNameEn}>{detectedFood.name_en}</Text>
+                    </View>
+                    <View style={styles.confidenceBadge}>
+                      <Text style={styles.confidenceText}>
+                        {(detectedFood.confidence * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Porsi */}
+                  <Text style={styles.portionText}>📏 Porsi: {detectedFood.porsi}</Text>
+
+                  {/* Nutrisi Grid */}
+                  <View style={styles.nutrisiGrid}>
+                    <View style={[styles.nutrisiItem, { backgroundColor: "#FFF3E0" }]}>
+                      <Text style={styles.nutrisiValue}>{detectedFood.kalori}</Text>
+                      <Text style={styles.nutrisiLabel}>Kalori</Text>
+                    </View>
+                    <View style={[styles.nutrisiItem, { backgroundColor: "#E8F5E9" }]}>
+                      <Text style={styles.nutrisiValue}>{detectedFood.protein_g}g</Text>
+                      <Text style={styles.nutrisiLabel}>Protein</Text>
+                    </View>
+                    <View style={[styles.nutrisiItem, { backgroundColor: "#E3F2FD" }]}>
+                      <Text style={styles.nutrisiValue}>{detectedFood.karbohidrat_g}g</Text>
+                      <Text style={styles.nutrisiLabel}>Karbo</Text>
+                    </View>
+                    <View style={[styles.nutrisiItem, { backgroundColor: "#FCE4EC" }]}>
+                      <Text style={styles.nutrisiValue}>{detectedFood.lemak_g}g</Text>
+                      <Text style={styles.nutrisiLabel}>Lemak</Text>
+                    </View>
+                  </View>
+
+                  {/* DB Match info */}
+                  {detectedFood.db_match && (
+                    <Text style={styles.dbMatchText}>
+                      🔗 Resep terkait: {detectedFood.db_match}
                     </Text>
                   )}
                 </>
+              ) : (
+                <Text style={styles.foodName}>
+                  {scanMessage || "Arahkan & Scan Makanan"}
+                </Text>
               )}
-            </View>
+            </ScrollView>
 
             <TouchableOpacity
               style={styles.nextBtn}
@@ -340,7 +379,7 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     paddingVertical: 16,
@@ -351,21 +390,83 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    maxHeight: 220,
   },
-  resultInfo: {
+  resultScroll: {
     flex: 1,
+    marginRight: 12,
   },
   loadingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
+  foodHeaderRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  foodHeaderInfo: {
+    flex: 1,
+  },
   foodName: {
     fontSize: 15,
     fontWeight: "700",
     color: "#333333",
-    marginBottom: 4,
+    marginBottom: 2,
     textTransform: "capitalize",
+  },
+  foodNameEn: {
+    fontSize: 11,
+    color: "#999999",
+    fontStyle: "italic",
+    marginBottom: 4,
+  },
+  confidenceBadge: {
+    backgroundColor: "#2DB34A",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  confidenceText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  portionText: {
+    fontSize: 12,
+    color: "#666666",
+    marginBottom: 10,
+  },
+  nutrisiGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 6,
+    marginBottom: 8,
+  },
+  nutrisiItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  nutrisiValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#333333",
+  },
+  nutrisiLabel: {
+    fontSize: 9,
+    color: "#888888",
+    fontWeight: "500",
+    marginTop: 1,
+  },
+  dbMatchText: {
+    fontSize: 11,
+    color: "#2DB34A",
+    fontWeight: "500",
   },
   foodDesc: {
     fontSize: 12,
@@ -379,6 +480,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 12,
+    marginTop: 4,
   },
 });

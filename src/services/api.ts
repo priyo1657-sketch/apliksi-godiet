@@ -127,10 +127,36 @@ export async function getRecommendations(profile: DietProfile): Promise<Recommen
   return response.json();
 }
 
+// ── Interfaces untuk Gemini Vision Scan ─────────────────────────────
+
+export interface DetectedFood {
+  name: string;          // Nama makanan dalam Bahasa Indonesia
+  name_en: string;       // Nama makanan dalam Bahasa Inggris
+  confidence: number;    // 0-1
+  kalori: number;
+  protein_g: number;
+  karbohidrat_g: number;
+  lemak_g: number;
+  serat_g: number;
+  porsi: string;         // Deskripsi porsi (misal: "1 butir (50g)")
+  db_match?: string;     // Nama menu dari database (jika cocok)
+  db_url?: string;       // URL resep dari database (jika cocok)
+  db_match_score?: number;
+}
+
+export interface ScanResponse {
+  success: boolean;
+  detected_foods: DetectedFood[];
+  message: string;
+  engine: string;        // "gemini-vision"
+}
+
 /**
- * Scan makanan dari gambar menggunakan model YOLO di server.
+ * Scan makanan dari gambar menggunakan Google Gemini Vision API.
+ * Gambar dikirim ke server Hugging Face, server yang memanggil Gemini API.
+ * Bisa mengenali makanan Indonesia dengan akurat (telur, nasi, ayam, dll).
  */
-export async function scanFood(imageUri: string): Promise<any> {
+export async function scanFood(imageUri: string): Promise<ScanResponse> {
   const formData = new FormData();
   
   // Ambil nama file dan tipe dari URI
@@ -144,7 +170,7 @@ export async function scanFood(imageUri: string): Promise<any> {
     type,
   } as any);
 
-  const response = await fetch(`${BASE_URL}/api/scan`, {
+  const response = await fetch(`${BASE_URL}/api/scan-gemini`, {
     method: 'POST',
     body: formData,
     headers: {
