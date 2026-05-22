@@ -18,7 +18,7 @@ const getLocalUrl = () => {
 
 // URL API Machine Learning (Hugging Face)
 const ML_BASE_URL = 'https://kirisakiakane-go-diet-ml.hf.space';
-const BASE_URL = ML_BASE_URL; // Gunakan ML_BASE_URL untuk semua endpoint ML
+const BASE_URL = getLocalUrl(); // Gunakan server lokal yang memuat model YOLO
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -170,7 +170,7 @@ export async function scanFood(imageUri: string): Promise<ScanResponse> {
     type,
   } as any);
 
-  const response = await fetch(`${BASE_URL}/api/scan-gemini`, {
+  const response = await fetch(`${BASE_URL}/api/scan`, {
     method: 'POST',
     body: formData,
     headers: {
