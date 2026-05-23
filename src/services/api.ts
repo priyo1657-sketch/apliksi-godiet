@@ -41,7 +41,6 @@ export interface MenuRecommendation {
   bahan: string;
   skor_agen: number;
   dipilih_kali: number;
-  is_ai_recommended?: boolean;
 }
 
 export interface NutritionTarget {
