@@ -18,7 +18,7 @@ const getLocalUrl = () => {
 
 // URL API Machine Learning (Hugging Face)
 const ML_BASE_URL = 'https://kirisakiakane-go-diet-ml.hf.space';
-const BASE_URL = getLocalUrl(); // Gunakan server lokal yang memuat model YOLO
+const BASE_URL = ML_BASE_URL; // Arahkan kembali ke Hugging Face
 
 // ── Types ───────────────────────────────────────────────────────────
 
