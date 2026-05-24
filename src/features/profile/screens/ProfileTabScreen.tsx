@@ -141,6 +141,7 @@ export const ProfileTabScreen: React.FC = () => {
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [reportCategory, setReportCategory] = useState("Kritik & Saran");
   const [reportMessage, setReportMessage] = useState("");
+  const [sendingReport, setSendingReport] = useState(false);
 
   // State untuk Tentang Kami
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
@@ -276,25 +277,48 @@ export const ProfileTabScreen: React.FC = () => {
   };
 
   // Fungsi kirim laporan bug / saran
-  const handleSendReport = () => {
+  const handleSendReport = async () => {
     if (reportMessage.trim().length < 10) {
       Alert.alert("Laporan Terlalu Singkat ⚠️", "Silakan masukkan deskripsi laporan/masukan minimal 10 karakter.");
       return;
     }
 
-    Alert.alert(
-      "Laporan Terkirim! ✅",
-      `Kategori: ${reportCategory}\n\nTerima kasih atas laporan/masukan Anda. Laporan Anda telah berhasil masuk ke antrean pengaduan GoDiet. Tim pengembang kami akan merespons melalui email (${user?.email || 'email terdaftar'}) dalam waktu maksimal 1x24 jam.`,
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            setReportMessage("");
-            setHelpModalVisible(false);
-          }
-        }
-      ]
-    );
+    setSendingReport(true);
+    try {
+      const response = await fetch("https://web-production-78ab8.up.railway.app/api/user/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_user: user?.id_user,
+          judul: reportCategory,
+          isi_laporan: reportMessage,
+          kategori: reportCategory,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        Alert.alert(
+          "Laporan Terkirim! ✅",
+          `Kategori: ${reportCategory}\n\nTerima kasih atas laporan/masukan Anda. Laporan Anda telah berhasil masuk ke antrean pengaduan GoDiet. Tim pengembang kami akan merespons melalui email (${user?.email || 'email terdaftar'}) dalam waktu maksimal 1x24 jam.`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setReportMessage("");
+                setHelpModalVisible(false);
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert("Gagal Mengirim Laporan ⚠️", data.message || "Terjadi kesalahan saat mengirim laporan.");
+      }
+    } catch (error) {
+      Alert.alert("Error Koneksi ⚠️", "Tidak dapat terhubung ke server. Silakan coba beberapa saat lagi.");
+    } finally {
+      setSendingReport(false);
+    }
   };
 
   // Fungsi logout
@@ -840,8 +864,10 @@ export const ProfileTabScreen: React.FC = () => {
               <Feather name="x" size={24} color={theme.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: theme.text }]}>Help and Report 💬</Text>
-            <TouchableOpacity onPress={handleSendReport}>
-              <Text style={styles.saveBtn}>Kirim</Text>
+            <TouchableOpacity onPress={handleSendReport} disabled={sendingReport}>
+              <Text style={[styles.saveBtn, sendingReport && { opacity: 0.5 }]}>
+                {sendingReport ? "Kirim..." : "Kirim"}
+              </Text>
             </TouchableOpacity>
           </View>
 
