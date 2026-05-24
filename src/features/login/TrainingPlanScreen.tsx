@@ -9,6 +9,7 @@ import {
   View,
   ScrollView,
   Alert,
+  StatusBar,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { RootStackParamList } from "../../../App";
@@ -295,6 +296,20 @@ export default function TrainingPlanScreen({ navigation }: Props) {
           )}
         </View>
       </ScrollView>
+
+      {/* Bottom Button */}
+      <View style={[styles.bottomSection, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={() => navigation.navigate("MoodSelection")}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.nextButtonText}>Selanjutnya</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Text style={styles.skipText}>Lewati</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -306,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 56 : 20,
+    paddingTop: Platform.OS === "ios" ? 56 : (StatusBar.currentHeight ? StatusBar.currentHeight + 12 : 48),
     paddingBottom: 16,
     borderBottomWidth: 1,
   },
@@ -394,4 +409,22 @@ const styles = StyleSheet.create({
   scheduleProgram: { fontSize: 14, fontWeight: "700" },
   scheduleTime: { fontSize: 12, marginTop: 2 },
   deleteButton: { padding: 6 },
+  bottomSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    paddingTop: 16,
+    gap: 12,
+    alignItems: "center",
+    borderTopWidth: 1,
+  },
+  nextButton: {
+    width: "100%",
+    height: 52,
+    backgroundColor: "#00B93F",
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextButtonText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  skipText: { fontSize: 13, color: "#888" },
 });
