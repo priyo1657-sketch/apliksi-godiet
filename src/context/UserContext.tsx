@@ -17,6 +17,7 @@ export interface UserProfile {
   tingkat_aktivitas: string;
   target_kalori_harian: number;
   foto_profil: string; // URI foto lokal atau URL
+  tujuan: string;      // Tujuan diet/fitness user (Fat Loss, Muscle Gain, dll)
 }
 
 export interface WorkoutHistoryItem {
@@ -141,6 +142,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tingkat_aktivitas: updated.tingkat_aktivitas,
           target_kalori_harian: updated.target_kalori_harian,
           foto_profil: updated.foto_profil,
+          tujuan: updated.tujuan,
         }),
       });
 
@@ -158,11 +160,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  // Fungsi simpan riwayat olahraga
+  // Fungsi simpan riwayat olahraga — simpan lokal + sync ke server (fire-and-forget)
   const saveWorkoutHistory = (history: WorkoutHistoryItem) => {
     const updatedHistory = [history, ...workoutHistory];
     setWorkoutHistory(updatedHistory);
     AsyncStorage.setItem('godiet_workout_history', JSON.stringify(updatedHistory));
+
+    // Sinkronisasi ke server — gagal tidak mempengaruhi pengalaman user
+    if (user?.id_user) {
+      const tanggal = history.date.split('T')[0]; // ambil format YYYY-MM-DD
+      fetch(`${API_URL}/api/user/workout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_workout: history.id,
+          id_user: user.id_user,
+          tanggal,
+          durasi_detik: history.totalTimeSeconds,
+          kalori_terbakar: history.caloriesBurned,
+        }),
+      }).catch(e => console.log('[UserContext] Sync workout gagal (offline?):', e));
+    }
   };
 
   // Fungsi hapus riwayat olahraga
