@@ -216,6 +216,8 @@ export const ProfileTabScreen: React.FC = () => {
     if (success) {
       Alert.alert("Berhasil ✅", "Profil berhasil diperbarui!");
       setEditModalVisible(false);
+    } else {
+      Alert.alert("Gagal ⚠️", "Gagal memperbarui profil di server.");
     }
   };
 

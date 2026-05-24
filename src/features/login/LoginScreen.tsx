@@ -65,6 +65,7 @@ export default function LoginScreen({ navigation }: Props) {
           tingkat_aktivitas: profile?.tingkat_aktivitas || '',
           target_kalori_harian: profile?.target_kalori_harian || 0,
           foto_profil: profile?.foto_profil || '',
+          tujuan: profile?.tujuan || '',
         });
         Alert.alert('Berhasil! 🎉', `Selamat datang kembali, ${profile?.nama || data.user.email}!`);
         navigation.navigate('Home');

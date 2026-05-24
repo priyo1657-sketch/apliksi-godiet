@@ -134,15 +134,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nama: updated.nama,
-          berat_badan: updated.berat_badan,
-          tinggi_badan: updated.tinggi_badan,
-          usia: updated.usia,
-          jenis_kelamin: updated.jenis_kelamin,
-          tingkat_aktivitas: updated.tingkat_aktivitas,
-          target_kalori_harian: updated.target_kalori_harian,
-          foto_profil: updated.foto_profil,
-          tujuan: updated.tujuan,
+          nama: updated.nama || '',
+          berat_badan: Number(updated.berat_badan) || 0,
+          tinggi_badan: Number(updated.tinggi_badan) || 0,
+          usia: Number(updated.usia) || 0,
+          jenis_kelamin: updated.jenis_kelamin || '',
+          tingkat_aktivitas: updated.tingkat_aktivitas || '',
+          target_kalori_harian: Number(updated.target_kalori_harian) || 0,
+          foto_profil: updated.foto_profil || '',
+          tujuan: updated.tujuan || '',
         }),
       });
 
@@ -150,14 +150,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.success) {
         setUser(updated);
         return true;
+      } else {
+        console.log('[UserContext] Gagal update profil di server:', data.message);
+        return false;
       }
     } catch (e) {
       console.log('[UserContext] Gagal update profil:', e);
+      return false;
     }
-
-    // Simpan lokal saja jika gagal ke server (offline-friendly)
-    setUser(updated);
-    return true;
   };
 
   // Fungsi simpan riwayat olahraga — simpan lokal + sync ke server (fire-and-forget)
