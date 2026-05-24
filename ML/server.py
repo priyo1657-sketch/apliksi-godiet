@@ -322,7 +322,8 @@ async def recommend_menu(profile: UserProfile):
     }
 
     try:
-        recs, target = run_inference(profil, top_k=15, n_rollout=40)
+        # top_k=36: 3 kategori × 12 menu per kategori (6 tampil + 6 cache)
+        recs, target = run_inference(profil, top_k=36, n_rollout=60)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 

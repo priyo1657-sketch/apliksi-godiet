@@ -34,43 +34,46 @@ const BG_COLOR = '#FFFFFF';
 const mealCategories = ['Breakfast', 'Lunch', 'Dinner'];
 
 // ── Fallback data (tampil saat server AI tidak merespons) ─────────────────────
+// 36 menu unik: 12 untuk Breakfast, 12 untuk Lunch, 12 untuk Dinner
 const fallbackMeals: MenuRecommendation[] = [
-  {
-    nama_menu: 'Salmon Panggang & Brokoli',
-    url: 'https://cookpad.com/id/resep/24642279',
-    kalori: 230, protein_g: 28, karbohidrat_g: 12, lemak_g: 8,
-    serat_g: 3, bahan: 'Ikan salmon|Brokoli|Paprika|Nasi', skor_agen: 0.9, dipilih_kali: 5,
-  },
-  {
-    nama_menu: 'Wrap Telur & Sayuran',
-    url: 'https://cookpad.com/id/resep/23933390',
-    kalori: 310, protein_g: 22, karbohidrat_g: 28, lemak_g: 12,
-    serat_g: 4, bahan: 'Telur|Selada|Timun|Tomat|Kulit lumpia', skor_agen: 0.85, dipilih_kali: 4,
-  },
-  {
-    nama_menu: 'Salad Ayam Jagung',
-    url: 'https://cookpad.com/id/resep/17132060',
-    kalori: 309, protein_g: 27, karbohidrat_g: 35, lemak_g: 7,
-    serat_g: 5, bahan: 'Ayam|Jagung manis|Tomat ceri|Lettcue|Timun', skor_agen: 0.8, dipilih_kali: 3,
-  },
-  {
-    nama_menu: 'Salmon Don & Tahu',
-    url: 'https://cookpad.com/id/resep/17039707',
-    kalori: 375, protein_g: 38, karbohidrat_g: 28, lemak_g: 12,
-    serat_g: 3, bahan: 'Salmon|Tahu|Nasi|Soy sauce|Wasabi', skor_agen: 0.75, dipilih_kali: 2,
-  },
-  {
-    nama_menu: 'Udang Tahu Kuah',
-    url: 'https://cookpad.com/id/resep/16975200',
-    kalori: 210, protein_g: 25, karbohidrat_g: 12, lemak_g: 6,
-    serat_g: 2, bahan: 'Udang|Baby pokcoy|Tahu|Bawang putih|Cabe|Jahe', skor_agen: 0.7, dipilih_kali: 1,
-  },
-  {
-    nama_menu: 'Ayam Hainan & Nasi Shirataki',
-    url: 'https://cookpad.com/id/resep/15772049',
-    kalori: 290, protein_g: 26, karbohidrat_g: 18, lemak_g: 10,
-    serat_g: 4, bahan: 'Sayap ayam|Beras shirataki|Lemon|Minyak wijen|Kecap asin|Pokcoy', skor_agen: 0.65, dipilih_kali: 1,
-  },
+  // ── Breakfast (0-11) ──────────────────────────────────────────────
+  { nama_menu: 'Salmon Panggang & Brokoli',      url: 'https://cookpad.com/id/resep/24642279', kalori: 230, protein_g: 28, karbohidrat_g: 12, lemak_g: 8,  serat_g: 3, bahan: 'Ikan salmon|Brokoli|Paprika|Nasi', skor_agen: 0.9, dipilih_kali: 5 },
+  { nama_menu: 'Wrap Telur & Sayuran',            url: 'https://cookpad.com/id/resep/23933390', kalori: 310, protein_g: 22, karbohidrat_g: 28, lemak_g: 12, serat_g: 4, bahan: 'Telur|Selada|Timun|Tomat|Kulit lumpia', skor_agen: 0.85, dipilih_kali: 4 },
+  { nama_menu: 'Oat Cake In Jar',                url: 'https://cookpad.com/id/resep/16489635', kalori: 280, protein_g: 9,  karbohidrat_g: 42, lemak_g: 9,  serat_g: 5, bahan: 'Oat|Pisang|Baking powder|Susu cair|Kismis', skor_agen: 0.8, dipilih_kali: 3 },
+  { nama_menu: 'Bakwan Oatmeal Diet',            url: 'https://cookpad.com/id/resep/16074006', kalori: 220, protein_g: 10, karbohidrat_g: 30, lemak_g: 6,  serat_g: 4, bahan: 'Oat|Telur ayam|Wortel|Kol|Bawang putih|Daun bawang', skor_agen: 0.75, dipilih_kali: 3 },
+  { nama_menu: 'Roti Oat Diet',                  url: 'https://cookpad.com/id/resep/16776632', kalori: 320, protein_g: 10, karbohidrat_g: 55, lemak_g: 7,  serat_g: 6, bahan: 'Tepung terigu|Oat|Gula|Minyak goreng|Ragi', skor_agen: 0.72, dipilih_kali: 2 },
+  { nama_menu: 'Banana Milkshake Oat',           url: 'https://cookpad.com/id/resep/15168648', kalori: 195, protein_g: 6,  karbohidrat_g: 38, lemak_g: 3,  serat_g: 4, bahan: 'Pisang raja|Oat quaker', skor_agen: 0.7, dipilih_kali: 2 },
+  { nama_menu: 'Telur Rebus & Sayur Kukus',      url: 'https://cookpad.com/id/resep/16683293', kalori: 180, protein_g: 14, karbohidrat_g: 12, lemak_g: 7,  serat_g: 3, bahan: 'Telur|Wortel|Kol|Bawang putih', skor_agen: 0.68, dipilih_kali: 2 },
+  { nama_menu: 'Ice Cream Oatmeal Diet',         url: 'https://cookpad.com/id/resep/16096127', kalori: 210, protein_g: 8,  karbohidrat_g: 35, lemak_g: 4,  serat_g: 3, bahan: 'Oatmeal|Kurma|Susu UHT Low Fat|Gula Tropicana Slim', skor_agen: 0.65, dipilih_kali: 1 },
+  { nama_menu: 'Salad Sayur Enak Diet',          url: 'https://cookpad.com/id/resep/15396366', kalori: 185, protein_g: 8,  karbohidrat_g: 14, lemak_g: 10, serat_g: 4, bahan: 'Kol ungu|Wortel|Selada|Bawang bombay|Mayonaise|Telur rebus', skor_agen: 0.63, dipilih_kali: 1 },
+  { nama_menu: 'Tumis Pakis Diet',               url: 'https://cookpad.com/id/resep/16645939', kalori: 130, protein_g: 5,  karbohidrat_g: 16, lemak_g: 5,  serat_g: 5, bahan: 'Sayur pakis|Bawang merah|Bawang putih|Cabe rawit', skor_agen: 0.6, dipilih_kali: 1 },
+  { nama_menu: 'Pizza Oatmeal Diet',             url: 'https://cookpad.com/id/resep/15327170', kalori: 310, protein_g: 14, karbohidrat_g: 45, lemak_g: 8,  serat_g: 5, bahan: 'Oatmeal|Baking powder|Greek yogurt|Saus tomat|Jagung|Wortel', skor_agen: 0.58, dipilih_kali: 1 },
+  { nama_menu: 'Tumis Diet Paling Mudah',        url: 'https://cookpad.com/id/resep/15275671', kalori: 160, protein_g: 10, karbohidrat_g: 14, lemak_g: 6,  serat_g: 3, bahan: 'Tahu kuning|Tomat|Tauge|Sawi hijau|Saus tiram', skor_agen: 0.55, dipilih_kali: 1 },
+  // ── Lunch (12-23) ────────────────────────────────────────────────
+  { nama_menu: 'Salad Ayam Jagung',              url: 'https://cookpad.com/id/resep/17132060', kalori: 309, protein_g: 27, karbohidrat_g: 35, lemak_g: 7,  serat_g: 5, bahan: 'Ayam|Jagung manis|Tomat ceri|Lettuce|Timun', skor_agen: 0.9, dipilih_kali: 4 },
+  { nama_menu: 'Salmon Don & Tahu',              url: 'https://cookpad.com/id/resep/17039707', kalori: 375, protein_g: 38, karbohidrat_g: 28, lemak_g: 12, serat_g: 3, bahan: 'Salmon|Tahu|Nasi|Soy sauce|Wasabi', skor_agen: 0.85, dipilih_kali: 4 },
+  { nama_menu: 'Udang Tahu Kuah',               url: 'https://cookpad.com/id/resep/16975200', kalori: 210, protein_g: 25, karbohidrat_g: 12, lemak_g: 6,  serat_g: 2, bahan: 'Udang|Baby pokcoy|Tahu|Bawang putih|Cabe|Jahe', skor_agen: 0.82, dipilih_kali: 3 },
+  { nama_menu: 'Ayam Bacem Panggang',            url: 'https://cookpad.com/id/resep/16953927', kalori: 285, protein_g: 30, karbohidrat_g: 22, lemak_g: 8,  serat_g: 1, bahan: 'Ayam|Tahu putih|Air kelapa|Bawang merah|Bawang putih|Kecap manis', skor_agen: 0.78, dipilih_kali: 3 },
+  { nama_menu: 'Chicken Steak Diet',             url: 'https://cookpad.com/id/resep/16308375', kalori: 295, protein_g: 32, karbohidrat_g: 18, lemak_g: 9,  serat_g: 3, bahan: 'Dada ayam fillet|Wortel rebus|Baby buncis|Kentang kukus', skor_agen: 0.75, dipilih_kali: 2 },
+  { nama_menu: 'Sapi Cah Jamur',                url: 'https://cookpad.com/id/resep/15255699', kalori: 320, protein_g: 28, karbohidrat_g: 15, lemak_g: 14, serat_g: 3, bahan: 'Daging sapi|Jamur shimeji|Bawang putih|Kecap asin|Ubi|Brokoli', skor_agen: 0.73, dipilih_kali: 2 },
+  { nama_menu: 'Tuna Salad Diet Praktis',        url: 'https://cookpad.com/id/resep/15042744', kalori: 175, protein_g: 24, karbohidrat_g: 6,  lemak_g: 7,  serat_g: 2, bahan: 'Tuna fillet|Jeruk lemon|Sayur salad|Kwepie wijen', skor_agen: 0.7, dipilih_kali: 2 },
+  { nama_menu: 'Ayam Pandan Ala Thailand',       url: 'https://cookpad.com/id/resep/15436487', kalori: 265, protein_g: 30, karbohidrat_g: 12, lemak_g: 10, serat_g: 1, bahan: 'Paha ayam|Bawang putih|Jahe|Sereh|Kecap asin|Daun pandan', skor_agen: 0.68, dipilih_kali: 1 },
+  { nama_menu: 'Pecel Ulek Diet',               url: 'https://cookpad.com/id/resep/16234449', kalori: 200, protein_g: 10, karbohidrat_g: 22, lemak_g: 8,  serat_g: 6, bahan: 'Touge|Bayam|Kacang panjang|Timun|Kacang tanah', skor_agen: 0.65, dipilih_kali: 1 },
+  { nama_menu: 'Bihun Goreng Diet Tanpa Minyak', url: 'https://cookpad.com/id/resep/14948996', kalori: 480, protein_g: 15, karbohidrat_g: 85, lemak_g: 6,  serat_g: 4, bahan: 'Bihun jagung|Tauge|Tomat|Sawi hijau|Wortel|Kecap', skor_agen: 0.62, dipilih_kali: 1 },
+  { nama_menu: 'Sambel Pecel Enak Diet',         url: 'https://cookpad.com/id/resep/16380460', kalori: 155, protein_g: 6,  karbohidrat_g: 14, lemak_g: 9,  serat_g: 3, bahan: 'Kacang tanah|Cabe rawit|Bawang putih|Kencur|Kurma|Garam himalaya', skor_agen: 0.58, dipilih_kali: 1 },
+  // ── Dinner (24-35) ───────────────────────────────────────────────
+  { nama_menu: 'Ayam Hainan & Nasi Shirataki',  url: 'https://cookpad.com/id/resep/15772049', kalori: 290, protein_g: 26, karbohidrat_g: 18, lemak_g: 10, serat_g: 4, bahan: 'Sayap ayam|Beras shirataki|Lemon|Minyak wijen|Kecap asin|Pokcoy', skor_agen: 0.9, dipilih_kali: 3 },
+  { nama_menu: 'Tahu Tempe Kuning Rebus',        url: 'https://cookpad.com/id/resep/15714386', kalori: 185, protein_g: 14, karbohidrat_g: 14, lemak_g: 8,  serat_g: 2, bahan: 'Tahu putih|Tempe|Daun jeruk|Kunyit|Serai|Garam himalaya', skor_agen: 0.85, dipilih_kali: 3 },
+  { nama_menu: 'Capcay Nasi Merah Diet',         url: 'https://cookpad.com/id/resep/15708575', kalori: 310, protein_g: 15, karbohidrat_g: 48, lemak_g: 6,  serat_g: 5, bahan: 'Nasi merah|Wortel|Pakcoy|Bawang bombay|Saos tiram', skor_agen: 0.82, dipilih_kali: 2 },
+  { nama_menu: 'Terong Balado Kukus',            url: 'https://cookpad.com/id/resep/23887397', kalori: 120, protein_g: 4,  karbohidrat_g: 18, lemak_g: 4,  serat_g: 5, bahan: 'Terong ungu|Cabe merah|Terasi|Bawang merah|Bawang putih', skor_agen: 0.78, dipilih_kali: 2 },
+  { nama_menu: 'Balado Kentang Diet',            url: 'https://cookpad.com/id/resep/15819629', kalori: 210, protein_g: 4,  karbohidrat_g: 40, lemak_g: 4,  serat_g: 4, bahan: 'Kentang|Cabe merah|Bawang putih|Bawang merah|Minyak kelapa|Tomat', skor_agen: 0.75, dipilih_kali: 2 },
+  { nama_menu: 'Tumis Pokcoy Jagung Brokoli',   url: 'https://cookpad.com/id/resep/16740315', kalori: 140, protein_g: 6,  karbohidrat_g: 20, lemak_g: 4,  serat_g: 5, bahan: 'Pokcoy|Jagung muda|Brokoli|Bawang putih|Saus tiram', skor_agen: 0.72, dipilih_kali: 1 },
+  { nama_menu: 'Salmon Panggang Madu',          url: 'https://cookpad.com/id/resep/15405847', kalori: 285, protein_g: 32, karbohidrat_g: 14, lemak_g: 9,  serat_g: 3, bahan: 'Salmon|Bawang putih|Garam|Madu|Wortel rebus|Tempe|Jagung', skor_agen: 0.7, dipilih_kali: 1 },
+  { nama_menu: 'Ayam Pandan Rendah Kalori',     url: 'https://cookpad.com/id/resep/15436487', kalori: 260, protein_g: 31, karbohidrat_g: 11, lemak_g: 9,  serat_g: 1, bahan: 'Paha ayam|Sereh|Kunyit|Kecap ikan|Minyak wijen|Gula merah', skor_agen: 0.68, dipilih_kali: 1 },
+  { nama_menu: 'Tumis Diet Tahu Tomat',         url: 'https://cookpad.com/id/resep/15275671', kalori: 155, protein_g: 10, karbohidrat_g: 13, lemak_g: 6,  serat_g: 3, bahan: 'Tahu kuning|Tomat|Tauge|Sawi hijau|Kaldu jamur', skor_agen: 0.65, dipilih_kali: 1 },
+  { nama_menu: 'Cake Diet Bergizi',             url: 'https://cookpad.com/id/resep/16713017', kalori: 245, protein_g: 7,  karbohidrat_g: 34, lemak_g: 9,  serat_g: 2, bahan: 'Biskuit gandum|Ultra Milk|Coklat putih|Susu kental|Maizena', skor_agen: 0.6, dipilih_kali: 1 },
+  { nama_menu: 'Sup Telur Ekonomis',            url: 'https://cookpad.com/id/resep/16683293', kalori: 110, protein_g: 8,  karbohidrat_g: 9,  lemak_g: 4,  serat_g: 2, bahan: 'Wortel|Kol|Telur|Bawang putih|Lada bubuk', skor_agen: 0.57, dipilih_kali: 1 },
+  { nama_menu: 'Bolu Pisang Kukus Simple',      url: 'https://cookpad.com/id/resep/15705256', kalori: 190, protein_g: 6,  karbohidrat_g: 28, lemak_g: 7,  serat_g: 2, bahan: 'Telur|Agar-agar|Nutrijell|SP|Mentega|Keju', skor_agen: 0.55, dipilih_kali: 1 },
 ];
 
 // ── Emoji helper ──────────────────────────────────────
@@ -148,11 +151,12 @@ export default function RecipesListScreen({ navigation }: any) {
     };
   }, [user]);
 
-  // State menu dipisah per kategori, defaultnya fallback yang disebar
+  // State menu dipisah per kategori: 12 menu unik per kategori
+  // (6 tampil langsung + 6 tersimpan di cache/state untuk scroll)
   const [categoryMenus, setCategoryMenus] = useState<Record<string, MenuRecommendation[]>>({
-    Breakfast: fallbackMeals.slice(0, 2),
-    Lunch: fallbackMeals.slice(2, 4),
-    Dinner: fallbackMeals.slice(4, 6),
+    Breakfast: fallbackMeals.slice(0, 12),
+    Lunch:     fallbackMeals.slice(12, 24),
+    Dinner:    fallbackMeals.slice(24, 36),
   });
 
   const [activeCategory, setActiveCategory] = useState('Breakfast');
@@ -166,13 +170,46 @@ export default function RecipesListScreen({ navigation }: any) {
   const [selectedItem, setSelectedItem] = useState<MenuRecommendation | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<any>(null);
 
-  // ── Distribusi menu ke 3 kategori ─────────────────────────────────
+  /**
+   * Distribusi 36 menu unik ke 3 kategori, masing-masing 12 menu.
+   * De-duplikasi ketat: satu menu hanya muncul di satu kategori.
+   * Prioritas: AI recommendations masuk lebih dulu (skor_agen > 0).
+   */
   const distributeMenus = (pool: MenuRecommendation[]) => {
-    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    // 1. Hapus duplikat berdasarkan URL
+    const seen = new Set<string>();
+    const unique = pool.filter(m => {
+      if (seen.has(m.url)) return false;
+      seen.add(m.url);
+      return true;
+    });
+
+    // 2. Pisahkan AI recommendations vs padding
+    const aiRecs = unique.filter(m => (m.skor_agen ?? 0) > 0);
+    const padding = unique.filter(m => (m.skor_agen ?? 0) === 0);
+
+    // 3. Shuffle ringan agar urutan tidak monoton
+    const shuffleArr = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+    const shuffledAI = shuffleArr(aiRecs);
+    const shuffledPad = shuffleArr(padding);
+    const ordered = [...shuffledAI, ...shuffledPad];
+
+    // 4. Ambil 36 pertama, bagi rata 12-12-12
+    // Jika kurang dari 36, isi sisanya dari fallback (tidak duplikat)
+    const MENUS_PER_CAT = 12;
+    const TOTAL = MENUS_PER_CAT * 3;
+    let base = ordered.slice(0, TOTAL);
+
+    if (base.length < TOTAL) {
+      const baseUrls = new Set(base.map(m => m.url));
+      const extras = fallbackMeals.filter(m => !baseUrls.has(m.url));
+      base = [...base, ...extras].slice(0, TOTAL);
+    }
+
     return {
-      Breakfast: shuffled.slice(0, 2),
-      Lunch: shuffled.slice(2, 4),
-      Dinner: shuffled.slice(4, 6),
+      Breakfast: base.slice(0, MENUS_PER_CAT),
+      Lunch:     base.slice(MENUS_PER_CAT, MENUS_PER_CAT * 2),
+      Dinner:    base.slice(MENUS_PER_CAT * 2, MENUS_PER_CAT * 3),
     };
   };
 
@@ -218,13 +255,20 @@ export default function RecipesListScreen({ navigation }: any) {
       if (!forceRefresh) {
         const cached = await loadMenuCache(profile);
         if (cached) {
-          console.log('[AI] Menggunakan cache — tanpa request ke server 🚀');
-          setCategoryMenus(cached.menus);
-          setServerOnline(cached.fromServer);
-          setFromCache(true);
-          setLoading(false);
-          setRefreshing(false);
-          return;
+          // Validasi: pastikan setiap kategori punya setidaknya 6 menu
+          const isValid = ['Breakfast', 'Lunch', 'Dinner'].every(
+            cat => (cached.menus[cat]?.length ?? 0) >= 6
+          );
+          if (isValid) {
+            console.log('[AI] Menggunakan cache — tanpa request ke server 🚀');
+            setCategoryMenus(cached.menus);
+            setServerOnline(cached.fromServer);
+            setFromCache(true);
+            setLoading(false);
+            setRefreshing(false);
+            return;
+          }
+          console.log('[AI] Cache ada tapi kurang menu — fetch ulang.');
         }
       }
 
@@ -232,7 +276,7 @@ export default function RecipesListScreen({ navigation }: any) {
       console.log(forceRefresh ? '[AI] Force refresh — bypass cache' : '[AI] Cache miss — fetch dari server');
       const success = await fetchFromServer();
 
-      // 3. Jika server gagal dan tidak ada cache, pakai fallback
+      // 3. Jika server gagal dan tidak ada cache, pakai fallback (36 menu)
       if (!success) {
         const fallbackDistributed = distributeMenus(fallbackMeals);
         setCategoryMenus(fallbackDistributed);
