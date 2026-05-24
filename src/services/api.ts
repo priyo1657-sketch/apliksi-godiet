@@ -70,16 +70,33 @@ export interface HealthStatus {
   device: string;
 }
 
+// ── Helper Fetch dengan Timeout ──────────────────────────────────────
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
 // ── API Functions ───────────────────────────────────────────────────
 
 /**
  * Cek apakah server ML aktif dan model siap.
  */
 export async function checkServerHealth(): Promise<HealthStatus> {
-  const response = await fetch(`${BASE_URL}/api/health`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/api/health`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
-  });
+  }, 8000); // 8 detik timeout
 
   if (!response.ok) {
     throw new Error(`Server error: ${response.status}`);
@@ -92,10 +109,10 @@ export async function checkServerHealth(): Promise<HealthStatus> {
  * Ambil daftar tujuan diet yang tersedia.
  */
 export async function getGoals(): Promise<GoalOption[]> {
-  const response = await fetch(`${BASE_URL}/api/goals`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/api/goals`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
-  });
+  }, 8000);
 
   if (!response.ok) {
     throw new Error(`Server error: ${response.status}`);
@@ -110,11 +127,11 @@ export async function getGoals(): Promise<GoalOption[]> {
  * Server hanya melakukan inference (forward pass), bukan training.
  */
 export async function getRecommendations(profile: DietProfile): Promise<RecommendResponse> {
-  const response = await fetch(`${BASE_URL}/api/recommend`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/api/recommend`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(profile),
-  });
+  }, 10000); // 10 detik timeout untuk rekomendasi (karena ada inference)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);

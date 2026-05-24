@@ -322,7 +322,7 @@ async def recommend_menu(profile: UserProfile):
     }
 
     try:
-        recs, target = run_inference(profil, top_k=5, n_rollout=200)
+        recs, target = run_inference(profil, top_k=15, n_rollout=40)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 

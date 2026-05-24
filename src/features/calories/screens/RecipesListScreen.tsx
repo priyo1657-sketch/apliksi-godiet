@@ -51,13 +51,25 @@ const fallbackMeals: MenuRecommendation[] = [
     nama_menu: 'Salad Ayam Jagung',
     url: 'https://cookpad.com/id/resep/17132060',
     kalori: 309, protein_g: 27, karbohidrat_g: 35, lemak_g: 7,
-    serat_g: 5, bahan: 'Ayam|Jagung manis|Tomat ceri|Lettuce|Timun', skor_agen: 0.8, dipilih_kali: 3,
+    serat_g: 5, bahan: 'Ayam|Jagung manis|Tomat ceri|Lettcue|Timun', skor_agen: 0.8, dipilih_kali: 3,
   },
   {
     nama_menu: 'Salmon Don & Tahu',
     url: 'https://cookpad.com/id/resep/17039707',
     kalori: 375, protein_g: 38, karbohidrat_g: 28, lemak_g: 12,
     serat_g: 3, bahan: 'Salmon|Tahu|Nasi|Soy sauce|Wasabi', skor_agen: 0.75, dipilih_kali: 2,
+  },
+  {
+    nama_menu: 'Udang Tahu Kuah',
+    url: 'https://cookpad.com/id/resep/16975200',
+    kalori: 210, protein_g: 25, karbohidrat_g: 12, lemak_g: 6,
+    serat_g: 2, bahan: 'Udang|Baby pokcoy|Tahu|Bawang putih|Cabe|Jahe', skor_agen: 0.7, dipilih_kali: 1,
+  },
+  {
+    nama_menu: 'Ayam Hainan & Nasi Shirataki',
+    url: 'https://cookpad.com/id/resep/15772049',
+    kalori: 290, protein_g: 26, karbohidrat_g: 18, lemak_g: 10,
+    serat_g: 4, bahan: 'Sayap ayam|Beras shirataki|Lemon|Minyak wijen|Kecap asin|Pokcoy', skor_agen: 0.65, dipilih_kali: 1,
   },
 ];
 
@@ -140,7 +152,7 @@ export default function RecipesListScreen({ navigation }: any) {
   const [categoryMenus, setCategoryMenus] = useState<Record<string, MenuRecommendation[]>>({
     Breakfast: fallbackMeals.slice(0, 2),
     Lunch: fallbackMeals.slice(2, 4),
-    Dinner: fallbackMeals.slice(0, 2).reverse(),
+    Dinner: fallbackMeals.slice(4, 6),
   });
 
   const [activeCategory, setActiveCategory] = useState('Breakfast');
