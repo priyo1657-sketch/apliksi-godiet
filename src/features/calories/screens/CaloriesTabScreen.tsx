@@ -162,7 +162,7 @@ export const CaloriesTabScreen: React.FC = () => {
   };
   
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image
@@ -240,7 +240,7 @@ export const CaloriesTabScreen: React.FC = () => {
 
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Meals today</Text>
-        <Text style={styles.seeAll}>All</Text>
+        <Text style={[styles.seeAll, { color: theme.textSecondary }]}>All</Text>
       </View>
 
       {["Sarapan", "Makan Siang", "Makan Malam"].map((catName, index) => {
@@ -265,7 +265,7 @@ export const CaloriesTabScreen: React.FC = () => {
               <Text style={styles.mealKcal}>{Math.round(kcal)} Kcal</Text>
             </View>
 
-            <Feather name="chevron-right" size={20} color="#CCC" />
+            <Feather name="chevron-right" size={20} color={isDarkMode ? "#A0A0A0" : "#CCC"} />
           </TouchableOpacity>
         );
       })}
