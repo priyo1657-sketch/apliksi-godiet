@@ -288,6 +288,7 @@ export const HomeTabScreen: React.FC<{
     } catch (e) {
       console.log(e);
       Alert.alert("Gagal", "Terjadi kesalahan saat menyimpan target kalori.");
+    }
   };
 
   return (
