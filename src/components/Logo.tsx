@@ -6,7 +6,7 @@ interface LogoProps {
   style?: ImageStyle;
 }
 
-const logoImage = require("../assets/logo.png");
+const logoImage = require("../assets/image.png");
 
 const styles = StyleSheet.create({
   logo: {

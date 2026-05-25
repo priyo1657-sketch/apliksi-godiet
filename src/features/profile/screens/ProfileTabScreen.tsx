@@ -981,7 +981,7 @@ export const ProfileTabScreen: React.FC = () => {
             >
               {/* Logo/Icon */}
               <Image 
-                source={require("../../../assets/logo.png")} 
+                source={require("../../../assets/image.png")} 
                 style={{
                   width: 140,
                   height: 60,
