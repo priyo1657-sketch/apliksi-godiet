@@ -8,7 +8,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../App";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
 
@@ -31,6 +33,8 @@ const goals: Goal[] = [
 ];
 
 export default function GoalSelectionScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   const [selectedGoals, setSelectedGoals] = useState<string[]>(["1"]);
 
   const toggleGoal = (id: string) => {
@@ -42,7 +46,7 @@ export default function GoalSelectionScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 12 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}

@@ -9,7 +9,9 @@ import {
   Image,
   Platform,
   Alert,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path } from "react-native-svg";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -113,6 +115,8 @@ export const CaloriesTabScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, isDarkMode } = useUser();
   const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const [loading, setLoading] = useState(false);
   const [totalNutrisi, setTotalNutrisi] = useState({
@@ -163,7 +167,7 @@ export const CaloriesTabScreen: React.FC = () => {
   
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 16 }]}>
         <View style={styles.headerLeft}>
           <Image
             source={{

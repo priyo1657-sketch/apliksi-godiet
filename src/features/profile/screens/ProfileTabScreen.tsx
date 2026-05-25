@@ -14,7 +14,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../../App";
 import { useUser } from "../../../context/UserContext";
 
@@ -121,6 +123,8 @@ const menuSections: MenuSection[] = [
 export const ProfileTabScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { user, setUser, updateProfile, logout, workoutHistory, isDarkMode, toggleDarkMode } = useUser();
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   // State untuk modal edit profil
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -465,7 +469,7 @@ export const ProfileTabScreen: React.FC = () => {
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Header Profile */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 16 }]}>
         <TouchableOpacity onPress={handleChangePhoto} activeOpacity={0.8}>
           <View style={styles.avatarWrapper}>
             <Image source={avatarSource} style={styles.avatar} />
@@ -581,7 +585,7 @@ export const ProfileTabScreen: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           {/* Modal Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: safeTop + 12 }]}>
             <TouchableOpacity onPress={() => setEditModalVisible(false)}>
               <Feather name="x" size={24} color="#333" />
             </TouchableOpacity>
@@ -658,7 +662,7 @@ export const ProfileTabScreen: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           {/* Modal Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: safeTop + 12 }]}>
             <TouchableOpacity onPress={() => setRencanaModalVisible(false)}>
               <Feather name="x" size={24} color="#333" />
             </TouchableOpacity>
@@ -747,7 +751,7 @@ export const ProfileTabScreen: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           {/* Modal Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: safeTop + 12 }]}>
             <TouchableOpacity onPress={() => setProgresModalVisible(false)}>
               <Feather name="x" size={24} color="#333" />
             </TouchableOpacity>
@@ -869,7 +873,7 @@ export const ProfileTabScreen: React.FC = () => {
       >
         <View style={[styles.modalContainer, { backgroundColor: theme.bg }]}>
           {/* Modal Header */}
-          <View style={[styles.modalHeader, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.headerBg, borderBottomColor: theme.border, paddingTop: safeTop + 12 }]}>
             <TouchableOpacity onPress={() => setHelpModalVisible(false)}>
               <Feather name="x" size={24} color={theme.text} />
             </TouchableOpacity>
@@ -1072,7 +1076,7 @@ export const ProfileTabScreen: React.FC = () => {
       >
         <View style={[styles.modalContainer, { backgroundColor: theme.bg }]}>
           {/* Modal Header */}
-          <View style={[styles.modalHeader, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.headerBg, borderBottomColor: theme.border, paddingTop: safeTop + 12 }]}>
             <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
               <Feather name="x" size={24} color={theme.text} />
             </TouchableOpacity>

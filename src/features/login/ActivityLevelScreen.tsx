@@ -11,7 +11,9 @@ import {
   View,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../App";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
 
@@ -68,6 +70,8 @@ const TICK_GAP = 4;
 const TICK_TOTAL = TICK_WIDTH + TICK_GAP;
 
 export default function ActivityLevelScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   const [selectedHeight, setSelectedHeight] = useState(170);
   const [selectedWeight, setSelectedWeight] = useState(64);
   const [selectedActivity, setSelectedActivity] = useState(activityOptions[2]);
@@ -107,7 +111,7 @@ export default function ActivityLevelScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 12 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}

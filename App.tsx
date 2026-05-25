@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { StatusBar } from "react-native";
 import { UserProvider } from "./src/context/UserContext";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import ActivityLevelScreen from "./src/features/login/ActivityLevelScreen";
 import CreateProfileScreen from "./src/features/login/CreateProfileScreen";
@@ -60,9 +61,10 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <UserProvider>
-    <NavigationContainer>
-      <StatusBar barStyle="light-content" backgroundColor="#2DB34A" />
+    <SafeAreaProvider>
+      <UserProvider>
+      <NavigationContainer>
+        <StatusBar barStyle="light-content" backgroundColor="#2DB34A" />
       <Stack.Navigator
         initialRouteName="Splash"
         screenOptions={{ headerShown: false, animation: "slide_from_right" }}
@@ -100,5 +102,6 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
     </UserProvider>
+    </SafeAreaProvider>
   );
 }

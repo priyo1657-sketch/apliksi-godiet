@@ -12,7 +12,9 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { RootStackParamList } from "../../../../App";
 import { useUser } from "../../../context/UserContext";
@@ -74,6 +76,8 @@ export const ActivityTabScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { user, workoutHistory, deleteWorkoutHistory, isDarkMode } = useUser();
   const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   // --- TEMA DINAMIS ---
   const theme = {
@@ -107,7 +111,7 @@ export const ActivityTabScreen: React.FC = () => {
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 16 }]}>
         <View style={styles.headerLeft}>
           <Image
             source={{

@@ -14,7 +14,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../App";
 import { Logo } from "../../components/Logo";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
@@ -28,6 +30,8 @@ const API_URL = 'https://web-production-78ab8.up.railway.app';
 
 export default function LoginScreen({ navigation }: Props) {
   const { setUser } = useUser();
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -88,7 +92,7 @@ export default function LoginScreen({ navigation }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Green diagonal header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 20 }]}>
         <View style={styles.circleDecor} />
         <View style={styles.logoRow}>
           <Logo size="medium" />

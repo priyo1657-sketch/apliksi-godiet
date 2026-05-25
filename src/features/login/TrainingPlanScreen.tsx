@@ -12,6 +12,7 @@ import {
   StatusBar,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../App";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
 import { useUser } from "../../context/UserContext";
@@ -41,6 +42,8 @@ const DURATIONS = ["15 Min", "30 Min", "45 Min", "60 Min"];
 
 export default function TrainingPlanScreen({ navigation }: Props) {
   const { isDarkMode } = useUser();
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   // Selected state
   const [selectedDay, setSelectedDay] = useState("Senin");
@@ -114,7 +117,7 @@ export default function TrainingPlanScreen({ navigation }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border, paddingTop: safeTop + 12 }]}>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.inputBg }]}
           onPress={() => navigation.goBack()}

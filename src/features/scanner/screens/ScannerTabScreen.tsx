@@ -14,6 +14,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { scanFood, DetectedFood } from "../../../services/api";
@@ -32,6 +33,8 @@ export const ScannerTabScreen: React.FC<{ onGoBack?: () => void }> = ({ onGoBack
   const navigation = useNavigation<Nav>();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   
   const [isScanning, setIsScanning] = useState(false);
   const [detectedFood, setDetectedFood] = useState<DetectedFood | null>(null);
@@ -96,7 +99,7 @@ export const ScannerTabScreen: React.FC<{ onGoBack?: () => void }> = ({ onGoBack
       <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
       
       {/* --- Header --- */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 12 }]}>
         <TouchableOpacity
           style={styles.closeBtn}
           onPress={() => {

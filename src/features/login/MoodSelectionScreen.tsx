@@ -7,7 +7,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../App";
 import { BorderRadius, Colors, Spacing } from "../../theme/colors";
 import { useUser } from "../../context/UserContext";
@@ -34,13 +36,15 @@ const moods: Mood[] = [
 ];
 
 export default function MoodSelectionScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   const { setMoodEmoji } = useUser();
   const [selectedMood, setSelectedMood] = useState<string>("1");
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeTop + 12 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}

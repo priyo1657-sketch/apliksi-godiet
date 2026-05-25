@@ -2,6 +2,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState, useEffect } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Image,
   ScrollView,
@@ -12,6 +13,8 @@ import {
   Alert,
   Modal,
   TextInput,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { useUser } from "../../../context/UserContext";
 import Svg, { Circle, Polyline, Path } from "react-native-svg";
@@ -154,6 +157,8 @@ export const HomeTabScreen: React.FC<{
   const navigation = useNavigation<Nav>();
   const { user, updateProfile, isDarkMode, moodEmoji } = useUser();
   const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
+  const insets = useSafeAreaInsets();
+  const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   // --- TEMA DINAMIS ---
   const theme = {
@@ -294,7 +299,7 @@ export const HomeTabScreen: React.FC<{
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.bg, borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { backgroundColor: theme.bg, borderBottomColor: theme.border, paddingTop: safeTop + 16 }]}>
         <View style={styles.headerLeft}>
           {user?.foto_profil ? (
             <Image source={{ uri: user.foto_profil }} style={styles.avatarImg} />
