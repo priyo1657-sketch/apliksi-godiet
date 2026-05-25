@@ -1,5 +1,5 @@
 // src/screens/CaloriesDashboardScreen.tsx
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path } from "react-native-svg";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useUser } from "../../../context/UserContext";
+import { getTodayMeals } from "../../../services/api";
 
 // Komponen Gauge Setengah Lingkaran
 const SemiCircleGauge = ({ percent, targetKcal }: { percent: number; targetKcal: number }) => {
@@ -112,6 +114,43 @@ export const CaloriesTabScreen: React.FC = () => {
   const { user, isDarkMode } = useUser();
   const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
 
+  const [loading, setLoading] = useState(false);
+  const [totalNutrisi, setTotalNutrisi] = useState({
+    total_kalori: 0,
+    total_karbohidrat: 0,
+    total_protein: 0,
+    total_lemak: 0
+  });
+  const [mealsToday, setMealsToday] = useState<any[]>([]);
+
+  const fetchMealsToday = useCallback(async () => {
+    if (!user?.id_user) return;
+    try {
+      setLoading(true);
+      const res = await getTodayMeals(user.id_user);
+      if (res.success) {
+        setTotalNutrisi(res.summary);
+        setMealsToday(res.meals);
+      }
+    } catch (e: any) {
+      console.log('[CaloriesTabScreen] Gagal memuat data kalori:', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMealsToday();
+    }, [fetchMealsToday])
+  );
+
+  const getCategoryCalories = (category: string) => {
+    return mealsToday
+      .filter((m) => m.kategori_waktu === category)
+      .reduce((sum, m) => sum + m.kalori, 0);
+  };
+
   // --- TEMA DINAMIS ---
   const theme = {
     bg: isDarkMode ? "#121212" : "#FFFFFF",
@@ -151,10 +190,10 @@ export const CaloriesTabScreen: React.FC = () => {
           const targetProtein = Math.round((targetKcal * 0.3) / 4);
           const targetFats = Math.round((targetKcal * 0.2) / 9);
 
-          const consumedKcal = 690; // dummy
-          const consumedCarbs = 15; // dummy
-          const consumedProtein = 42; // dummy
-          const consumedFats = 7; // dummy
+          const consumedKcal = totalNutrisi.total_kalori;
+          const consumedCarbs = totalNutrisi.total_karbohidrat;
+          const consumedProtein = totalNutrisi.total_protein;
+          const consumedFats = totalNutrisi.total_lemak;
 
           const percentKcal = Math.min(100, Math.round((consumedKcal / targetKcal) * 100));
           const percentCarbs = Math.min(100, Math.round((consumedCarbs / targetCarbs) * 100));
@@ -204,28 +243,32 @@ export const CaloriesTabScreen: React.FC = () => {
         <Text style={styles.seeAll}>All</Text>
       </View>
 
-      {[1, 2, 3].map((item, index) => (
-        <TouchableOpacity
-          key={index}
-          style={[styles.mealCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          activeOpacity={0.8}
-          // 3. SEKARANG NAVIGATION BISA BERFUNGSI MENGARAH KE DAFTAR RESEP
-          onPress={() => navigation.navigate("RecipesList")} 
-        >
-          <View style={[styles.mealImagePlaceholder, { backgroundColor: theme.imgBg }]}>
-            <Text>🥪</Text>
-          </View>
+      {["Sarapan", "Makan Siang", "Makan Malam"].map((catName, index) => {
+        const kcal = getCategoryCalories(catName);
+        return (
+          <TouchableOpacity
+            key={index}
+            style={[styles.mealCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("RecipesList")} 
+          >
+            <View style={[styles.mealImagePlaceholder, { backgroundColor: theme.imgBg }]}>
+              <Text style={{ fontSize: 20 }}>
+                {index === 0 ? "🌅" : index === 1 ? "☀️" : "🌙"}
+              </Text>
+            </View>
 
-          <View style={{ flex: 1, marginLeft: 16 }}>
-            <Text style={[styles.mealName, { color: theme.text }]}>
-              {index === 0 ? "Sarapan" : index === 1 ? "Makan Siang" : "Makan Malam"}
-            </Text>
-            <Text style={styles.mealKcal}>230 Kcal</Text>
-          </View>
+            <View style={{ flex: 1, marginLeft: 16 }}>
+              <Text style={[styles.mealName, { color: theme.text }]}>
+                {catName}
+              </Text>
+              <Text style={styles.mealKcal}>{Math.round(kcal)} Kcal</Text>
+            </View>
 
-          <Feather name="chevron-right" size={20} color="#CCC" />
-        </TouchableOpacity>
-      ))}
+            <Feather name="chevron-right" size={20} color="#CCC" />
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 };

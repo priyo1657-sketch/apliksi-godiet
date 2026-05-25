@@ -10,8 +10,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { useUser } from "../../../context/UserContext";
+import { logMeal } from "../../../services/api";
 
 type RootStackParamList = {
   RecipeDetail: { id?: string };
@@ -77,8 +80,56 @@ const ingredients = [
 ];
 
 export default function RecipeDetailScreen({ navigation, route }: Props) {
-  // Terima recipe ID dari route params
-  // Bisa digunakan untuk fetch data spesifik: route.params?.id
+  const { user } = useUser();
+
+  const handleAddToDietPlan = () => {
+    if (!user) return;
+
+    Alert.alert(
+      "Add to Diet Plan",
+      "Pilih waktu makan untuk resep ini:",
+      [
+        {
+          text: "Sarapan 🌅",
+          onPress: () => saveMealToBackend("Sarapan")
+        },
+        {
+          text: "Makan Siang ☀️",
+          onPress: () => saveMealToBackend("Makan Siang")
+        },
+        {
+          text: "Makan Malam 🌙",
+          onPress: () => saveMealToBackend("Makan Malam")
+        },
+        {
+          text: "Batal",
+          style: "cancel"
+        }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const saveMealToBackend = async (kategoriWaktu: 'Sarapan' | 'Makan Siang' | 'Makan Malam') => {
+    if (!user) return;
+    try {
+      await logMeal({
+        id_user: user.id_user,
+        nama_makanan: "Avocado Chicken Salad",
+        kalori: 485,
+        karbohidrat: 55,
+        protein: 35,
+        lemak: 10,
+        kategori_waktu: kategoriWaktu
+      });
+      Alert.alert("Sukses", `Resep "Avocado Chicken Salad" berhasil dicatat sebagai ${kategoriWaktu}!`, [
+        { text: "OK", onPress: () => navigation.goBack() }
+      ]);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Gagal", e.message || "Gagal mencatat asupan makanan");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -165,7 +216,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddToDietPlan}>
           <Text style={styles.addButtonText}>Add to diet plan</Text>
         </TouchableOpacity>
       </View>

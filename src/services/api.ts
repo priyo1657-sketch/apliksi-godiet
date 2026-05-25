@@ -202,3 +202,61 @@ export async function scanFood(imageUri: string): Promise<ScanResponse> {
 
   return response.json();
 }
+
+// ── Backend API Integrasi ───────────────────────────────────────────
+const BACKEND_URL = 'https://web-production-78ab8.up.railway.app';
+
+export async function logMeal(mealData: {
+  id_user: string;
+  nama_makanan: string;
+  kalori: number;
+  karbohidrat: number;
+  protein: number;
+  lemak: number;
+  kategori_waktu: 'Sarapan' | 'Makan Siang' | 'Makan Malam';
+}): Promise<{ success: boolean; message: string; id_log?: string }> {
+  const response = await fetch(`${BACKEND_URL}/api/meals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(mealData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Gagal mencatat makanan: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getTodayMeals(id_user: string): Promise<{
+  success: boolean;
+  summary: {
+    total_kalori: number;
+    total_karbohidrat: number;
+    total_protein: number;
+    total_lemak: number;
+  };
+  meals: Array<{
+    id_log: string;
+    nama_makanan: string;
+    kalori: number;
+    karbohidrat: number;
+    protein: number;
+    lemak: number;
+    kategori_waktu: string;
+    created_at: string;
+  }>;
+}> {
+  const response = await fetch(`${BACKEND_URL}/api/meals/today?id_user=${encodeURIComponent(id_user)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Gagal mengambil asupan: ${response.status}`);
+  }
+
+  return response.json();
+}

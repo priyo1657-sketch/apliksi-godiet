@@ -14,6 +14,7 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
@@ -23,6 +24,7 @@ import {
   MenuRecommendation,
   DietProfile,
   NutritionTarget,
+  logMeal,
 } from '../../../services/api';
 import { useUser } from "../../../context/UserContext";
 import { loadMenuCache, saveMenuCache, createProfileHash } from '../../../services/menuCache';
@@ -311,6 +313,54 @@ export default function RecipesListScreen({ navigation }: any) {
     setModalVisible(true);
   };
 
+  const handleAddToDietPlan = () => {
+    if (!user || !selectedItem) return;
+
+    Alert.alert(
+      "Add to Diet Plan",
+      "Pilih waktu makan untuk resep ini:",
+      [
+        {
+          text: "Sarapan 🌅",
+          onPress: () => saveMealToBackend("Sarapan")
+        },
+        {
+          text: "Makan Siang ☀️",
+          onPress: () => saveMealToBackend("Makan Siang")
+        },
+        {
+          text: "Makan Malam 🌙",
+          onPress: () => saveMealToBackend("Makan Malam")
+        },
+        {
+          text: "Batal",
+          style: "cancel"
+        }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const saveMealToBackend = async (kategoriWaktu: 'Sarapan' | 'Makan Siang' | 'Makan Malam') => {
+    if (!user || !selectedItem) return;
+    try {
+      setModalVisible(false);
+      await logMeal({
+        id_user: user.id_user,
+        nama_makanan: selectedItem.nama_menu,
+        kalori: selectedItem.kalori,
+        karbohidrat: selectedItem.karbohidrat_g,
+        protein: selectedItem.protein_g,
+        lemak: selectedItem.lemak_g,
+        kategori_waktu: kategoriWaktu
+      });
+      Alert.alert("Sukses", `Resep "${selectedItem.nama_menu}" berhasil dicatat sebagai ${kategoriWaktu}!`);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Gagal", e.message || "Gagal mencatat asupan makanan");
+    }
+  };
+
   // ── Render card ─────────────────────────────────────────────────────────────
   const renderCard = ({ item }: { item: MenuRecommendation }) => {
     const detail = getRecipeDetail(item.url);
@@ -565,7 +615,7 @@ export default function RecipesListScreen({ navigation }: any) {
 
             {/* CTA Button */}
             <View style={styles.ctaContainer}>
-              <TouchableOpacity style={styles.ctaBtn} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity style={styles.ctaBtn} onPress={handleAddToDietPlan}>
                 <Text style={styles.ctaTxt}>Add to diet plan</Text>
               </TouchableOpacity>
             </View>
