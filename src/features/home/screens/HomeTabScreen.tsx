@@ -288,13 +288,12 @@ export const HomeTabScreen: React.FC<{
     } catch (e) {
       console.log(e);
       Alert.alert("Gagal", "Terjadi kesalahan saat menyimpan target kalori.");
-    }
   };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.bg, borderBottomColor: theme.border }]}>
         <View style={styles.headerLeft}>
           {user?.foto_profil ? (
             <Image source={{ uri: user.foto_profil }} style={styles.avatarImg} />
@@ -311,13 +310,12 @@ export const HomeTabScreen: React.FC<{
           </View>
         </View>
         <TouchableOpacity
-          style={styles.notifBtn}
+          style={[styles.notifBtn, { backgroundColor: theme.subBg }]}
           onPress={() => navigation.navigate("NotificationSettings")}
         >
           <Text style={styles.notificationIcon}>🔔</Text>
         </TouchableOpacity>
       </View>
-
       {/* Daily Plan Card */}
       <TouchableOpacity
         style={styles.planCard}

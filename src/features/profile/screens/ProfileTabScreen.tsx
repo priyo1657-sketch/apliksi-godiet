@@ -175,10 +175,14 @@ export const ProfileTabScreen: React.FC = () => {
           const result = await ImagePicker.launchCameraAsync({
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.7,
+            quality: 0.6,
+            base64: true,
           });
           if (!result.canceled && result.assets[0]) {
-            await updateProfile({ foto_profil: result.assets[0].uri });
+            const base64Photo = result.assets[0].base64
+              ? `data:image/jpeg;base64,${result.assets[0].base64}`
+              : result.assets[0].uri;
+            await updateProfile({ foto_profil: base64Photo });
           }
         },
       },
@@ -194,10 +198,14 @@ export const ProfileTabScreen: React.FC = () => {
             mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.7,
+            quality: 0.6,
+            base64: true,
           });
           if (!result.canceled && result.assets[0]) {
-            await updateProfile({ foto_profil: result.assets[0].uri });
+            const base64Photo = result.assets[0].base64
+              ? `data:image/jpeg;base64,${result.assets[0].base64}`
+              : result.assets[0].uri;
+            await updateProfile({ foto_profil: base64Photo });
           }
         },
       },

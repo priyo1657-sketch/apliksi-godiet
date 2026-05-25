@@ -11,6 +11,7 @@ import LoginScreen from "./src/features/login/LoginScreen";
 import MoodSelectionScreen from "./src/features/login/MoodSelectionScreen";
 import SignUpScreen from "./src/features/login/SignUpScreen";
 import TrainingPlanScreen from "./src/features/login/TrainingPlanScreen";
+import ForgotPasswordScreen from "./src/features/login/ForgotPasswordScreen";
 import { MainScreen } from "./src/features/navigation/MainScreen";
 import NotificationSettingsScreen from "./src/features/navigation/NotificationSettingsScreen";
 import OnboardingScreen from "./src/features/splash/OnboardingScreen";
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   SignUp: undefined;
   Login: undefined;
+  ForgotPassword: undefined;
   CreateProfile: undefined;
   GoalSelection: undefined;
   ActivityLevel: undefined;
@@ -70,6 +72,7 @@ export default function App() {
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="CreateProfile" component={CreateProfileScreen} />
         <Stack.Screen name="GoalSelection" component={GoalSelectionScreen} />
         <Stack.Screen name="ActivityLevel" component={ActivityLevelScreen} />

@@ -158,7 +158,10 @@ export default function LoginScreen({ navigation }: Props) {
               />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.forgotRow}>
+          <TouchableOpacity 
+            style={styles.forgotRow}
+            onPress={() => navigation.navigate("ForgotPassword" as any)}
+          >
             <Text style={styles.forgotText}>Lupa password?</Text>
           </TouchableOpacity>
         </View>
