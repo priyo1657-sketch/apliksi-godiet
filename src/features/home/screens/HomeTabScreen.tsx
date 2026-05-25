@@ -148,7 +148,9 @@ function TujuanPieChart({ size = 48 }) {
 
 // --- Layar Utama --- //
 
-export const HomeTabScreen: React.FC = () => {
+export const HomeTabScreen: React.FC<{
+  onNavigateToTab?: (tab: "Home" | "Calories" | "Scanner" | "Activity" | "Profile") => void;
+}> = ({ onNavigateToTab }) => {
   const navigation = useNavigation<Nav>();
   const { user, updateProfile, isDarkMode, moodEmoji } = useUser();
   const displayName = user?.nama ? user.nama.split(' ')[0] : 'Pengguna';
@@ -502,7 +504,13 @@ export const HomeTabScreen: React.FC = () => {
         <View style={styles.actionsGrid}>
           <TouchableOpacity
             style={[styles.actionCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            onPress={() => navigation.navigate("Scanner")}
+            onPress={() => {
+              if (onNavigateToTab) {
+                onNavigateToTab("Scanner");
+              } else {
+                navigation.navigate("Scanner");
+              }
+            }}
           >
             <Text style={styles.actionIcon}>📸</Text>
             <Text style={[styles.actionLabel, { color: theme.text }]}>Scan Makanan</Text>

@@ -28,7 +28,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const { width } = Dimensions.get("window");
 const FRAME_SIZE = width * 0.7;
 
-export const ScannerTabScreen: React.FC = () => {
+export const ScannerTabScreen: React.FC<{ onGoBack?: () => void }> = ({ onGoBack }) => {
   const navigation = useNavigation<Nav>();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -99,7 +99,13 @@ export const ScannerTabScreen: React.FC = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.closeBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (onGoBack) {
+              onGoBack();
+            } else {
+              navigation.goBack();
+            }
+          }}
         >
           <Feather name="x-circle" size={26} color="#333" />
         </TouchableOpacity>

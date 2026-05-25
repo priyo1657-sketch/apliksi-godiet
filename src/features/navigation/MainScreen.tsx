@@ -13,17 +13,17 @@ export const MainScreen: React.FC = () => {
   const renderScreen = () => {
     switch (activeTab) {
       case "Home":
-        return <HomeTabScreen />;
+        return <HomeTabScreen onNavigateToTab={setActiveTab} />;
       case "Calories":
         return <CaloriesTabScreen />;
-        case "Scanner":
-        return <ScannerTabScreen />;
+      case "Scanner":
+        return <ScannerTabScreen onGoBack={() => setActiveTab("Home")} />;
       case "Activity":
         return <ActivityTabScreen />;
       case "Profile":
         return <ProfileTabScreen />;
       default:
-        return <HomeTabScreen />;
+        return <HomeTabScreen onNavigateToTab={setActiveTab} />;
     }
   };
 

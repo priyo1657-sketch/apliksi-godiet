@@ -972,17 +972,15 @@ export const ProfileTabScreen: React.FC = () => {
               showsVerticalScrollIndicator={false}
             >
               {/* Logo/Icon */}
-              <View style={{
-                width: 70,
-                height: 70,
-                borderRadius: 35,
-                backgroundColor: "#E0F2E9",
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: 16
-              }}>
-                <MaterialCommunityIcons name="silverware-clean" size={38} color="#00B93F" />
-              </View>
+              <Image 
+                source={require("../../../assets/logo.png")} 
+                style={{
+                  width: 140,
+                  height: 60,
+                  resizeMode: "contain",
+                  marginBottom: 16
+                }} 
+              />
 
               <Text style={{ fontSize: 22, fontWeight: "800", color: theme.text }}>GoDiet App 🥗</Text>
               <Text style={{ fontSize: 13, color: "#00B93F", fontWeight: "600", marginTop: 2, marginBottom: 16 }}>Versi Premium v1.2.0</Text>
