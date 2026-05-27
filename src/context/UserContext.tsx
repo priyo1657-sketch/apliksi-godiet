@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { invalidateMenuCache, hasDietProfileChanged } from '../services/menuCache';
+import { saveToken, getToken, removeToken } from '../services/tokenStorage';
 
 const API_URL = 'https://web-production-78ab8.up.railway.app';
 
@@ -36,6 +37,7 @@ interface UserContextType {
   moodEmoji: string;
   setMoodEmoji: (emoji: string) => void;
   setUser: (user: UserProfile | null) => void;
+  setToken: (token: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   saveWorkoutHistory: (history: WorkoutHistoryItem) => void;
   deleteWorkoutHistory: (id: string) => void;
@@ -51,6 +53,7 @@ const UserContext = createContext<UserContextType>({
   moodEmoji: '😊',
   setMoodEmoji: () => {},
   setUser: () => {},
+  setToken: async () => {},
   updateProfile: async () => false,
   saveWorkoutHistory: () => {},
   deleteWorkoutHistory: () => {},
@@ -86,6 +89,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (storedMood) {
           setMoodEmojiState(storedMood);
         }
+        // JWT token sudah disimpan oleh tokenStorage.ts — tidak perlu load manual di sini
+        const existingToken = await getToken();
+        if (existingToken) {
+          console.log('[UserContext] Token JWT ditemukan di storage.');
+        }
       } catch (e) {
         console.log('[UserContext] Gagal membaca data lokal:', e);
       }
@@ -117,6 +125,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Fungsi untuk menyimpan token JWT
+  const setToken = async (token: string): Promise<void> => {
+    await saveToken(token);
+  };
+
   // Fungsi update profil — kirim ke server + simpan lokal
   const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
     if (!user) return false;
@@ -130,9 +143,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = { ...user, ...updates };
 
     try {
+      // Baca token JWT dari storage untuk disertakan di header
+      const token = await getToken();
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      };
+
       const response = await fetch(`${API_URL}/api/user/profile/${user.id_user}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           nama: updated.nama || '',
           berat_badan: Number(updated.berat_badan) || 0,
@@ -190,15 +210,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     AsyncStorage.setItem('godiet_workout_history', JSON.stringify(updatedHistory));
   };
 
-  // Fungsi logout — hapus semua data lokal termasuk cache menu
+  // Fungsi logout — hapus semua data lokal termasuk cache menu dan token JWT
   const logout = async () => {
     setUserState(null);
     await AsyncStorage.removeItem('godiet_user');
+    await removeToken(); // Hapus token JWT
     await invalidateMenuCache();
+    console.log('[UserContext] User logout — token JWT dihapus.');
   };
 
   return (
-    <UserContext.Provider value={{ user, workoutHistory, isDarkMode, toggleDarkMode, moodEmoji, setMoodEmoji, setUser, updateProfile, saveWorkoutHistory, deleteWorkoutHistory, logout, isLoggedIn: !!user }}>
+    <UserContext.Provider value={{ user, workoutHistory, isDarkMode, toggleDarkMode, moodEmoji, setMoodEmoji, setUser, setToken, updateProfile, saveWorkoutHistory, deleteWorkoutHistory, logout, isLoggedIn: !!user }}>
       {children}
     </UserContext.Provider>
   );

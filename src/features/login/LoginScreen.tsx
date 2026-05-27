@@ -29,7 +29,7 @@ type Props = {
 const API_URL = 'https://web-production-78ab8.up.railway.app';
 
 export default function LoginScreen({ navigation }: Props) {
-  const { setUser } = useUser();
+  const { setUser, setToken } = useUser();
   const insets = useSafeAreaInsets();
   const safeTop = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   const [email, setEmail] = useState("");
@@ -55,6 +55,15 @@ export default function LoginScreen({ navigation }: Props) {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Simpan token JWT (jika backend mengirimkannya)
+        const token = data.token || data.accessToken || null;
+        if (token) {
+          await setToken(token);
+          console.log('[LoginScreen] Token JWT berhasil disimpan.');
+        } else {
+          console.warn('[LoginScreen] Backend tidak mengembalikan token JWT.');
+        }
+
         // Simpan data user ke context global
         const profile = data.user.profile;
         setUser({

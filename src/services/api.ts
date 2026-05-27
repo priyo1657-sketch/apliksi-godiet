@@ -7,6 +7,7 @@
  */
 
 import { Platform } from 'react-native';
+import { getToken } from './tokenStorage';
 
 // Base URL untuk XAMPP lokal (jika ada API login)
 const getLocalUrl = () => {
@@ -87,7 +88,37 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
   }
 }
 
-// ── API Functions ───────────────────────────────────────────────────
+// ── Authenticated Fetch (otomatis sisipkan JWT) ───────────────────────
+/**
+ * Fetch ke backend API yang dilindungi autentikasi JWT.
+ * Secara otomatis membaca token dari AsyncStorage dan menyisipkannya
+ * ke dalam header Authorization: Bearer <token>.
+ */
+export async function apiFetch(
+  endpoint: string,
+  options: RequestInit = {},
+  timeout = 10000
+): Promise<Response> {
+  const token = await getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    console.warn('[apiFetch] Tidak ada token JWT, request dilakukan tanpa autentikasi.');
+  }
+
+  return fetchWithTimeout(
+    `${BACKEND_URL}${endpoint}`,
+    { ...options, headers },
+    timeout
+  );
+}
+
+
 
 /**
  * Cek apakah server ML aktif dan model siap.
@@ -215,9 +246,9 @@ export async function logMeal(mealData: {
   lemak: number;
   kategori_waktu: 'Sarapan' | 'Makan Siang' | 'Makan Malam';
 }): Promise<{ success: boolean; message: string; id_log?: string }> {
-  const response = await fetch(`${BACKEND_URL}/api/meals`, {
+  // Gunakan apiFetch agar token JWT disertakan secara otomatis
+  const response = await apiFetch('/api/meals', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(mealData),
   });
 
@@ -248,9 +279,9 @@ export async function getTodayMeals(id_user: string): Promise<{
     created_at: string;
   }>;
 }> {
-  const response = await fetch(`${BACKEND_URL}/api/meals/today?id_user=${encodeURIComponent(id_user)}`, {
+  // Gunakan apiFetch agar token JWT disertakan secara otomatis
+  const response = await apiFetch(`/api/meals/today?id_user=${encodeURIComponent(id_user)}`, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
   });
 
   if (!response.ok) {
