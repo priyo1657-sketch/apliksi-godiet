@@ -1,6 +1,6 @@
 # 🍎 Aplikasi GoDiet
 
-Aplikasi mobile multi-platform untuk membantu pengguna menjalani gaya hidup sehat dan mencapai target diet mereka. Dibangun dengan teknologi modern menggunakan React Native dan Expo untuk memberikan pengalaman pengguna yang seamless di iOS, Android, dan Web.
+Aplikasi mobile multi-platform untuk membantu pengguna menjalani gaya hidup sehat dan mencapai target diet mereka. Dibangun dengan teknologi modern menggunakan React Native dan Expo untuk memberikan pengalaman pengguna yang seamless Android.
 
 ## ✨ Fitur Utama
 
