@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../../../App";
 import { useUser } from "../../../context/UserContext";
+import { apiFetch } from "../../../services/api";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -202,7 +203,7 @@ export const ProfileTabScreen: React.FC = () => {
             mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.6,
+            quality: 0.3,
             base64: true,
           });
           if (!result.canceled && result.assets[0]) {
@@ -299,9 +300,8 @@ export const ProfileTabScreen: React.FC = () => {
 
     setSendingReport(true);
     try {
-      const response = await fetch("https://web-production-78ab8.up.railway.app/api/user/reports", {
+      const response = await apiFetch("/api/user/reports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id_user: user?.id_user,
           judul: reportCategory,

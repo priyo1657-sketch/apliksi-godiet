@@ -166,12 +166,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }),
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setUser(updated);
-        return true;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        if (data.success) {
+          setUser(updated);
+          return true;
+        } else {
+          console.log('[UserContext] Gagal update profil di server:', data.message);
+          return false;
+        }
       } else {
-        console.log('[UserContext] Gagal update profil di server:', data.message);
+        const text = await response.text();
+        console.log('[UserContext] Server mengembalikan non-JSON (Gagal update profil):', response.status, text.substring(0, 150));
         return false;
       }
     } catch (e) {
